@@ -4,6 +4,7 @@ using LlmTornado.Code;
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 
@@ -499,7 +500,13 @@ public class Orchestration<TInput, TOutput> : Orchestration
     {
         if (!typeof(TInput).IsAssignableFrom(initialRunnable.GetInputType()))
         {
-            throw new InvalidCastException($"Entry Runtime {initialRunnable.ToString()} with Input type of {initialRunnable.GetInputType()} Requires Input Type of {typeof(TInput)}");
+            var expectedTypeName = GetFriendlyTypeName(typeof(TInput));
+            var actualTypeName = GetFriendlyTypeName(initialRunnable.GetInputType());
+            
+            throw new InvalidCastException(
+                $"Type mismatch for entry runnable '{initialRunnable.RunnableName}': " +
+                $"The orchestration expects input type '{expectedTypeName}' but the runnable accepts '{actualTypeName}'. " +
+                $"Ensure your entry runnable can accept '{expectedTypeName}' as its input type.");
         }
 
         InitialRunnable = initialRunnable;
@@ -517,10 +524,39 @@ public class Orchestration<TInput, TOutput> : Orchestration
     {
         if (!typeof(TOutput).IsAssignableFrom(outputRunnable.GetOutputType()))
         {
-            throw new InvalidCastException($"Output Runtime {outputRunnable.ToString()} with Output type of {outputRunnable.GetOutputType()} Requires Cast of Output Type to {typeof(TOutput)}");
+            var expectedTypeName = GetFriendlyTypeName(typeof(TOutput));
+            var actualTypeName = GetFriendlyTypeName(outputRunnable.GetOutputType());
+            
+            throw new InvalidCastException(
+                $"Type mismatch for result runnable '{outputRunnable.RunnableName}': " +
+                $"The orchestration expects output type '{expectedTypeName}' but the runnable produces '{actualTypeName}'. " +
+                $"Ensure your result runnable outputs '{expectedTypeName}' or a compatible type.");
         }
 
         RunnableWithResult = outputRunnable;
+    }
+
+    /// <summary>
+    /// Gets a friendly, readable name for a type.
+    /// </summary>
+    private static string GetFriendlyTypeName(Type type)
+    {
+        if (type == null)
+            return "null";
+
+        if (!type.IsGenericType)
+            return type.Name;
+
+        var genericTypeName = type.GetGenericTypeDefinition().Name;
+        var genericArgs = type.GetGenericArguments();
+        
+        // Remove the `1, `2, etc. from generic type names
+        var backtickIndex = genericTypeName.IndexOf('`');
+        if (backtickIndex > 0)
+            genericTypeName = genericTypeName.Substring(0, backtickIndex);
+
+        var argNames = string.Join(", ", genericArgs.Select(GetFriendlyTypeName));
+        return $"{genericTypeName}<{argNames}>";
     }
 }
 
