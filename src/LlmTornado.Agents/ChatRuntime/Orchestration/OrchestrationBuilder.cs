@@ -256,6 +256,40 @@ public class OrchestrationBuilder
         return this;
     }
 
+    /// <summary>
+    /// Validates the orchestration graph for type safety and structural correctness.
+    /// This method should be called before Build() to ensure the graph is properly configured.
+    /// </summary>
+    /// <param name="throwOnError">If true, throws GraphValidationException on validation errors. If false, returns validation result.</param>
+    /// <returns>The validation result containing any errors or warnings</returns>
+    public GraphValidationResult Validate(bool throwOnError = true)
+    {
+        var result = GraphCompiler.ValidateGraph(Configuration);
+        
+        if (throwOnError)
+        {
+            result.ThrowIfInvalid();
+        }
+        
+        return result;
+    }
+
+    /// <summary>
+    /// Compiles and validates the orchestration graph, then builds the configuration.
+    /// This is the recommended method to build an orchestration as it ensures type safety.
+    /// </summary>
+    /// <param name="validateGraph">If true, validates the graph structure before building</param>
+    /// <returns>The compiled and validated orchestration configuration</returns>
+    public OrchestrationRuntimeConfiguration Compile(bool validateGraph = true)
+    {
+        if (validateGraph)
+        {
+            Validate(throwOnError: true);
+        }
+        
+        return Build();
+    }
+
     public OrchestrationRuntimeConfiguration Build()
     {
         return Configuration;

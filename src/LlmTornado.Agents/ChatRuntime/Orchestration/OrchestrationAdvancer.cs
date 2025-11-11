@@ -1,4 +1,7 @@
-﻿namespace LlmTornado.Agents.ChatRuntime.Orchestration;
+﻿using System;
+using System.Linq;
+
+namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 
 /// <summary>
 /// Delegate for a transition event that takes an input of type T and returns a boolean indicating whether the transition should occur.
@@ -94,6 +97,29 @@ public class OrchestrationAdvancer
         // Base implementation uses DynamicInvoke
         return (bool?)InvokeMethod?.DynamicInvoke(value) ?? false;
     }
+
+    /// <summary>
+    /// Gets a friendly, readable name for a type.
+    /// </summary>
+    protected static string GetFriendlyTypeName(Type type)
+    {
+        if (type == null)
+            return "null";
+
+        if (!type.IsGenericType)
+            return type.Name;
+
+        var genericTypeName = type.GetGenericTypeDefinition().Name;
+        var genericArgs = type.GetGenericArguments();
+        
+        // Remove the `1, `2, etc. from generic type names
+        var backtickIndex = genericTypeName.IndexOf('`');
+        if (backtickIndex > 0)
+            genericTypeName = genericTypeName.Substring(0, backtickIndex);
+
+        var argNames = string.Join(", ", genericArgs.Select(GetFriendlyTypeName));
+        return $"{genericTypeName}<{argNames}>";
+    }
 }
 
 /// <summary>
@@ -114,7 +140,12 @@ public class OrchestrationAdvancer<T> : OrchestrationAdvancer
         // Validate the next state input type against the type of T
         if (!typeof(T).IsAssignableFrom(nextRunnable.GetInputType()))
         {
-            throw new InvalidOperationException($"{NextRunnable.RunnableName} with input type of {nextRunnable.GetInputType()} requires Input type assignable to type of {typeof(T)}");
+            throw new InvalidOperationException(
+                $"Type mismatch: Cannot advance to runnable '{nextRunnable.RunnableName}'. " +
+                $"The advancer outputs type '{GetFriendlyTypeName(typeof(T))}' but the target runnable expects '{GetFriendlyTypeName(nextRunnable.GetInputType())}'. " +
+                $"To fix this, either: " +
+                $"1) Change the target runnable to accept '{GetFriendlyTypeName(typeof(T))}' as input, or " +
+                $"2) Use AddAdvancer<TValue, TOutput>() to provide a converter function that transforms '{GetFriendlyTypeName(typeof(T))}' to '{GetFriendlyTypeName(nextRunnable.GetInputType())}'.");
         }
 
         InvokeMethod = methodToInvoke ?? ((input) => true);
@@ -127,7 +158,12 @@ public class OrchestrationAdvancer<T> : OrchestrationAdvancer
         // Validate the next state input type against the type of T
         if (!typeof(T).IsAssignableFrom(nextRunnable.GetInputType()))
         {
-            throw new InvalidOperationException($"Next State with input type of {nextRunnable.GetInputType()} requires Input type assignable to type of {typeof(T)}");
+            throw new InvalidOperationException(
+                $"Type mismatch: Cannot advance to runnable '{nextRunnable.RunnableName}'. " +
+                $"The advancer outputs type '{GetFriendlyTypeName(typeof(T))}' but the target runnable expects '{GetFriendlyTypeName(nextRunnable.GetInputType())}'. " +
+                $"To fix this, either: " +
+                $"1) Change the target runnable to accept '{GetFriendlyTypeName(typeof(T))}' as input, or " +
+                $"2) Use AddAdvancer<TValue, TOutput>() to provide a converter function that transforms '{GetFriendlyTypeName(typeof(T))}' to '{GetFriendlyTypeName(nextRunnable.GetInputType())}'.");
         }
 
         InvokeMethod = methodToInvoke;
@@ -173,7 +209,10 @@ public class OrchestrationAdvancer<TInput, TOutput> : OrchestrationAdvancer<TInp
         // Validate the next state input type against the type of TOutput
         if (!typeof(TOutput).IsAssignableFrom(nextRunnable.GetInputType()))
         {
-            throw new InvalidOperationException($"Next runner with input type of {nextRunnable.GetInputType()} requires Input type assignable to type of {typeof(TOutput)}");
+            throw new InvalidOperationException(
+                $"Type mismatch: Cannot advance to runnable '{nextRunnable.RunnableName}'. " +
+                $"The converter outputs type '{GetFriendlyTypeName(typeof(TOutput))}' but the target runnable expects '{GetFriendlyTypeName(nextRunnable.GetInputType())}'. " +
+                $"Ensure your converter function returns a value of type '{GetFriendlyTypeName(nextRunnable.GetInputType())}' or a compatible type.");
         }
         type = "in_out";
         ConverterMethod = converter;
