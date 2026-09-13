@@ -1858,12 +1858,15 @@ public class Conversation
 
                             await Threading.WhenAll(fnTask, customTask);
 
-                            if (MostRecentApiResult?.Choices?.Count > 0 &&
-                                MostRecentApiResult.Choices[0].FinishReason is ChatMessageFinishReasons
-                                    .ToolCalls)
-                            {
-                                delta.Content = MostRecentApiResult.Object;
-                            }
+                            // NOTE: this used to overwrite delta.Content with
+                            // MostRecentApiResult.Object when the finish reason was ToolCalls.
+                            // ApiResultBase.Object is the API "object" field (e.g.
+                            // "chat.completion.chunk"), never the message text, so it clobbered
+                            // the assistant content the provider had already attached (and, when
+                            // the provider attached nothing, injected the bogus object string into
+                            // the conversation history). Providers are responsible for populating
+                            // the tool-call message content; see OpenAiEndpointProvider which now
+                            // preserves the streamed plaintext.
 
                             if (lastUserMessage is not null)
                             {

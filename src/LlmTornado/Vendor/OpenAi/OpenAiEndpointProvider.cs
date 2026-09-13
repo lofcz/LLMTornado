@@ -552,6 +552,19 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
 
             toolsAccumulator.Usage = usage;
             toolsMessage.Role = ChatMessageRoles.Assistant;
+
+            // Preserve the assistant text streamed before the tool calls. In this
+            // branch the plaintext accumulator is otherwise dropped (the code below
+            // that emits AppendAssistantMessage is skipped by the yield break), and
+            // Conversation.StreamResponseRich then overwrites the appended message's
+            // Content with ApiResultBase.Object (the API "object" type, e.g.
+            // "chat.completion.chunk"). The model would never see its own reply and
+            // would re-answer the prompt on every tool round.
+            if (plaintextBuilder is { Length: > 0 } && string.IsNullOrEmpty(toolsMessage.Content))
+            {
+                toolsMessage.Content = plaintextBuilder.ToString();
+            }
+
             yield return toolsAccumulator;
             yield break;
         }
