@@ -33,6 +33,14 @@ class Program
                 ClassName: "ChatModelRequestyAll",
                 NormalizeFunction: NormalizeRequesty,
                 Description: "All models from Requesty."
+            ),
+
+            new ProviderConfig(
+                Provider: LLmProviders.Opper,
+                NamespaceName: "Opper",
+                ClassName: "ChatModelOpperAll",
+                NormalizeFunction: NormalizeOpper,
+                Description: "All models from Opper."
             )
         ];
         
@@ -196,6 +204,14 @@ class Program
         return resultBuilder.ToString();
     }
     
+    static string NormalizeOpper(string input)
+    {
+        // Opper ids are bare pool names such as "claude-sonnet-4-6". A pinned route
+        // carries a "provider/" prefix, e.g. "azure/gpt-5.5"; keep the model part.
+        int slash = input.LastIndexOf('/');
+        return slash >= 0 ? input[(slash + 1)..] : input;
+    }
+
     static string NormalizeRequesty(string input)
     {
         if (string.IsNullOrEmpty(input))

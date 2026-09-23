@@ -1798,6 +1798,10 @@ public enum LLmProviders
     /// </summary>
     Requesty,
     /// <summary>
+    /// Opper, an EU-hosted OpenAI-compatible gateway.
+    /// </summary>
+    Opper,
+    /// <summary>
     /// Upstage.
     /// </summary>
     Upstage,
