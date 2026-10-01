@@ -24,6 +24,7 @@ using LlmTornado.Models;
 using LlmTornado.Moderation;
 using LlmTornado.Ocr;
 using LlmTornado.Rerank;
+using LlmTornado.Decision;
 using LlmTornado.Realtime;
 using LlmTornado.Responses;
 using LlmTornado.Threads;
@@ -69,6 +70,7 @@ public class TornadoApi
     private readonly Lazy<ResponsesEndpoint> responses;
     private readonly Lazy<UploadsEndpoint> uploads;
     private readonly Lazy<RerankEndpoint> rerank;
+    private readonly Lazy<DecisionEndpoint> decision;
     private readonly Lazy<ResponsesConversationEndpoint> responsesConversation;
     private readonly Lazy<SkillsEndpoint> skills;
     private readonly Lazy<OpenAiSkillsEndpoint> openAiSkills;
@@ -127,6 +129,7 @@ public class TornadoApi
         responses = new Lazy<ResponsesEndpoint>(() => new ResponsesEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         uploads = new Lazy<UploadsEndpoint>(() => new UploadsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         rerank = new Lazy<RerankEndpoint>(() => new RerankEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        decision = new Lazy<DecisionEndpoint>(() => new DecisionEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         responsesConversation = new Lazy<ResponsesConversationEndpoint>(() => new ResponsesConversationEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         skills = new Lazy<SkillsEndpoint>(() => new SkillsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         openAiSkills = new Lazy<OpenAiSkillsEndpoint>(() => new OpenAiSkillsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
@@ -538,6 +541,13 @@ public class TornadoApi
     ///     Voyage reranker endpoint receives as input a query, a list of documents, and other arguments such as the model name, and returns a response containing the reranking results.
     /// </summary>
     public RerankEndpoint Rerank => rerank.Value;
+
+    /// <summary>
+    ///     The Decision API evaluates a state (text or structured data) against a set of typed questions
+    ///     (choice, score, noul) and returns calibrated probabilities instead of generated text.
+    ///     Only available with the TypeSafe provider (Jev models).
+    /// </summary>
+    public DecisionEndpoint Decision => decision.Value;
     
     /// <summary>
     ///     The Skills API allows you to manage specialized prompts and configurations for Claude that can be automatically selected and used.

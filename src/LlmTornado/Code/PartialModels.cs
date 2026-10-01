@@ -1810,6 +1810,10 @@ public enum LLmProviders
     /// </summary>
     LiteLlm,
     /// <summary>
+    /// TypeSafe (System One decision models, e.g. Jev).
+    /// </summary>
+    TypeSafe,
+    /// <summary>
     /// Internal value.
     /// </summary>
     Length
@@ -2072,7 +2076,12 @@ public enum CapabilityEndpoints
     /// <summary>
     /// Anthropic Admin API rate limits endpoint.
     /// </summary>
-    RateLimits
+    RateLimits,
+
+    /// <summary>
+    /// Decision endpoint (TypeSafe System One <c>/systemone</c>: choice, score and noul questions).
+    /// </summary>
+    Decision
 }
 
 /// <summary>

@@ -107,6 +107,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             CapabilityEndpoints.Rerank when provider is LLmProviders.Voyage => "rerank",
             CapabilityEndpoints.Ocr when provider is LLmProviders.Mistral => "ocr",
             CapabilityEndpoints.Ocr when provider is LLmProviders.Zai => "layout_parsing",
+            CapabilityEndpoints.Decision when provider is LLmProviders.TypeSafe => "systemone",
             CapabilityEndpoints.Realtime => "realtime",
             CapabilityEndpoints.Live => "live/sessions",
             _ => throw new Exception($"{provider} doesn't support endpoint {endpoint}")
@@ -126,7 +127,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url, new RequestUrlContext(eStr, url, model)), eStr, url, model?.Name) : $"{string.Format(Api?.ApiUrlFormat ?? "https://api.openai.com/{0}/{1}", Api?.ResolveApiVersion(), GetEndpointUrlFragment(endpoint), model?.Name)}{url}";
     }
 
-    private static readonly HashSet<LLmProviders> noApiKeyProviders = [LLmProviders.OpenRouter, LLmProviders.Requesty];
+    private static readonly HashSet<LLmProviders> noApiKeyProviders = [LLmProviders.OpenRouter, LLmProviders.Requesty, LLmProviders.TypeSafe];
     
     public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming, object? sourceObject)
     {
@@ -229,6 +230,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             LLmProviders.MiniMax when typeof(T) == typeof(ImageGenerationResult) => (T?)(object?)ImageGenerationResult.Deserialize(LLmProviders.MiniMax, jsonData, postData),
             LLmProviders.MiniMax when typeof(T) == typeof(MusicGenerationResult) => (T?)(object?)JsonConvert.DeserializeObject<VendorMiniMaxMusicResponse>(jsonData)?.ToResult(),
             LLmProviders.MiniMax when typeof(T) == typeof(LyricsGenerationResult) => (T?)(object?)JsonConvert.DeserializeObject<VendorMiniMaxLyricsResponse>(jsonData)?.ToResult(),
+            LLmProviders.TypeSafe when typeof(T) == typeof(global::LlmTornado.Models.Vendors.RetrievedModelsResult) => (T?)(object?)global::LlmTornado.Models.Vendors.RetrievedModelsResult.Deserialize(LLmProviders.TypeSafe, jsonData, postData),
             _ => JsonConvert.DeserializeObject<T>(jsonData)
         };
     }
