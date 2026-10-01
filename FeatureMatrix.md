@@ -28,6 +28,7 @@ _Empty field means the feature is unsupported by the provider._
 | **Alibaba** | ✅ | ✅ | ✅ | | | | | | | | | | | ❌ |
 | **Blablador** | ✅ | ✅ | ✅ | | | | | | | | | | | |
 | **MiniMax** | ✅ | ✅ | | ✅ | ✅ | ✅ | | | | ✅ | | | | |
+| **TypeSafe** | | ✅ | | | | | | | | | | | | |
 | **Custom*** | ✅ | ✅ | | | | | | | | | | | | |
 
 _*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, KoboldCpp, etc._  
@@ -61,6 +62,12 @@ Conversations | Assistants | Threads | Messages | Runs | Run steps | Vector stor
 | Rerank | Parse |
 |-----------|-----------|
 | ✅ | ✅ |
+
+## TypeSafe Specific
+
+| Decision (System One) |
+|-----------|
+| ✅ |
 
 ## MiniMax Specific
 
