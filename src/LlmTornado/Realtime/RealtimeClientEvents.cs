@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Realtime;
@@ -11,10 +11,6 @@ public static class RealtimeClientEvents
     /// <summary>Sends a GA <c>session.update</c> for transcription sessions.</summary>
     public static object SessionUpdate(RealtimeTranscriptionSessionConfig session, string? eventId = null) =>
         new { type = "session.update", event_id = eventId, session };
-
-    /// <summary>Legacy <c>transcription_session.update</c> wrapper around GA config.</summary>
-    public static object TranscriptionSessionUpdate(RealtimeTranscriptionSessionConfig session, string? eventId = null) =>
-        new { type = "transcription_session.update", event_id = eventId, session };
 
     /// <summary>Append base64-encoded PCM audio to the input buffer.</summary>
     public static object InputAudioBufferAppend(string base64Audio, string? eventId = null) =>

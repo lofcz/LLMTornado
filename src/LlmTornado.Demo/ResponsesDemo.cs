@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
@@ -651,42 +651,6 @@ public class ResponsesDemo : DemoBase
             : $"Computer call: {computerCall.CallId}, actions: {computerCall.GetExecutableActions().Count}");
     }
 
-    [TornadoTest, Flaky("deprecated preview tool")]
-    public static async Task ResponseComputerUsePreviewTool()
-    {
-        EndpointBase.SetRequestsTimeout(20000);
-        
-        byte[] bytes = await File.ReadAllBytesAsync("Static/Images/empty.jpg");
-        string base64 = $"data:image/jpeg;base64,{Convert.ToBase64String(bytes)}";
-        
-        ResponseResult result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
-        {
-            Model = ChatModel.OpenAi.Codex.ComputerUsePreview,
-            Background = false,
-            InputItems = [
-                new ResponseInputMessage(ChatMessageRoles.User, [
-                    new ResponseInputContentText("Check the latest OpenAI news on google.com."),
-                    ResponseInputContentImage.CreateImageUrl(base64),
-                ])
-            ],
-            Tools = [
-                new ResponseComputerUseTool
-                {
-                    DisplayWidth = 2560,
-                    DisplayHeight = 1440,
-                    Environment = ResponseComputerEnvironment.Windows
-                }
-            ],
-            Reasoning = new ReasoningConfiguration
-            {
-                Summary = ResponseReasoningSummaries.Concise
-            },
-            Truncation = ResponseTruncationStrategies.Auto
-        });
-
-        int z = 0;
-    }
-    
     [TornadoTest]
     public static async Task ResponseFileSearch()
     {
@@ -1005,43 +969,6 @@ public class ResponsesDemo : DemoBase
 
         AssertTrue(second?.OutputText?.Contains("ws-demo-2", StringComparison.OrdinalIgnoreCase) == true);
         Assert.That(connection.CurrentResponseId, Is.EqualTo(second!.Id));
-    }
-
-    [TornadoTest]
-    public static async Task ResponseLocalShellTool()
-    {
-        ResponseRequest req = new ResponseRequest
-        {
-            Model = ChatModel.OpenAi.Codex.MiniLatest,
-            Background = false,
-            InputItems = [
-                new ResponseInputMessage(ChatMessageRoles.User, "List files in the current directory?")
-            ],
-            Tools = [
-                new ResponseLocalShellTool()
-            ]
-        };
-
-        ResponseResult result = await Program.Connect().Responses.CreateResponse(req);
-
-        Assert.That(result.Output.OfType<ResponseLocalShellToolCallItem>().Count(), Is.GreaterThan(0));
-
-        ResponseRequest req2 = new ResponseRequest
-        {
-            Model = ChatModel.OpenAi.Codex.MiniLatest,
-            Background = false,
-            InputItems = [
-                new LocalShellCallOutput(result.Output.OfType<ResponseLocalShellToolCallItem>().First().CallId, "helloWorld.txt")
-            ],
-            Tools = [
-                new ResponseLocalShellTool()
-            ],
-            PreviousResponseId = result.Id
-        };
-
-        ResponseResult result2 = await Program.Connect().Responses.CreateResponse(req2);
-
-        int z = 0;
     }
 
     [TornadoTest]

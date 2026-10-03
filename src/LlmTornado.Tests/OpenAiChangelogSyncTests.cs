@@ -1,4 +1,4 @@
-using LlmTornado.Audio.Models;
+﻿using LlmTornado.Audio.Models;
 using LlmTornado.Audio.Models.OpenAi;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
@@ -7,6 +7,8 @@ using LlmTornado.Images;
 using LlmTornado.Images.Models;
 using LlmTornado.Images.Models.OpenAi;
 using LlmTornado.Models;
+using LlmTornado.Responses;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Tests;
 
@@ -91,8 +93,21 @@ public class OpenAiChangelogSyncTests
     [Test]
     public void ServiceTiers_IncludeFastAndUltrafast()
     {
-        Assert.That(ChatRequestServiceTiers.Fast.ToString(), Is.EqualTo("Fast"));
-        Assert.That(ChatRequestServiceTiers.Ultrafast.ToString(), Is.EqualTo("Ultrafast"));
+        foreach (var (tier, value) in new[]
+        {
+            (ChatRequestServiceTiers.Fast, "fast"),
+            (ChatRequestServiceTiers.Ultrafast, "ultrafast")
+        })
+        {
+            ResponseRequest request = new ResponseRequest
+            {
+                Model = ChatModel.OpenAi.Gpt6.V6Astra,
+                InputString = "Hello",
+                ServiceTier = tier
+            };
+            JObject body = JObject.Parse(request.Serialize(new TornadoApi("test-key").GetProvider(LLmProviders.OpenAi)).Body.ToString()!);
+            Assert.That(body["service_tier"]?.ToString(), Is.EqualTo(value));
+        }
     }
 
     [Test]

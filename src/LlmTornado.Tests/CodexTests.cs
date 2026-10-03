@@ -27,25 +27,25 @@ public class CodexTests
         Assert.That(loginResult.Success, Is.True);
 
         IReadOnlyList<CodexModel> models = await session.ListModelsAsync();
-        Assert.That(models.Select(x => x.Model), Is.EqualTo(new[] { "gpt-5.4", "gpt-5.3-codex" }));
+        Assert.That(models.Select(x => x.Model), Is.EqualTo(new[] { "gpt-6-astra", "gpt-5.3-codex" }));
         Assert.That(
             models[0].SupportedReasoningEfforts.Select(x => x.ReasoningEffort),
             Is.EqualTo(new[] { "low", "medium", "high" }));
         Assert.That(
             models[0].ServiceTiers.Select(x => x.Id),
-            Is.EqualTo(new[] { "priority", "future-tier" }));
+            Is.EqualTo(new[] { "priority", "future-tier", "ultrafast" }));
         Assert.That(models[0].DefaultServiceTier, Is.EqualTo("priority"));
 
         CodexThread thread = await session.StartThreadAsync(new CodexThreadOptions
         {
-            Model = models[1].Model,
+            Model = models[0].Model,
             WorkingDirectory = "D:/repo"
         });
         List<string> deltas = [];
         CodexTurnResult turn = await thread.RunAsync("Reply briefly.", new CodexTurnOptions
         {
             ReasoningEffort = "high",
-            ServiceTier = "priority",
+            ServiceTier = models[0].ServiceTiers.Single(x => x.Id == "ultrafast").Id,
             OnTextDelta = delta =>
             {
                 deltas.Add(delta.Delta);
@@ -60,7 +60,7 @@ public class CodexTests
         JObject turnRequest = transport.Messages.Single(message => message.Value<string>("method") == "turn/start");
         Assert.That(turnRequest["params"]?["input"]?.Count(), Is.EqualTo(1));
         Assert.That(turnRequest["params"]?["input"]?[0]?["type"]?.Value<string>(), Is.EqualTo("text"));
-        Assert.That(turnRequest["params"]?["serviceTier"]?.Value<string>(), Is.EqualTo("priority"));
+        Assert.That(turnRequest["params"]?["serviceTier"]?.Value<string>(), Is.EqualTo("ultrafast"));
         Assert.That(transport.Messages.Any(message => message.Value<string>("method")?.Contains("image") == true), Is.False);
     }
 
@@ -189,7 +189,7 @@ public class CodexTests
                     {
                         ["data"] = new JArray
                         {
-                            Model("gpt-5.4", true, "low", "medium", "high"),
+                            Model("gpt-6-astra", true, "low", "medium", "high"),
                             Model("gpt-5.3-codex", false, "medium", "high")
                         },
                         ["nextCursor"] = null
@@ -282,7 +282,7 @@ public class CodexTests
 
         private static JObject Model(string model, bool isDefault, params string[] efforts)
         {
-            return new JObject
+            JObject result = new JObject
             {
                 ["id"] = model,
                 ["model"] = model,
@@ -310,6 +310,11 @@ public class CodexTests
                 }),
                 ["inputModalities"] = new JArray("text")
             };
+            if (model == "gpt-6-astra")
+            {
+                ((JArray)result["serviceTiers"]!).Add(new JObject { ["id"] = "ultrafast", ["name"] = "Ultrafast" });
+            }
+            return result;
         }
     }
 }

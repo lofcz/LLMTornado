@@ -1,4 +1,4 @@
-using LlmTornado.Chat.Models;
+﻿using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Demo;
@@ -36,6 +36,11 @@ public class RealtimeTests
         Assert.That(ChatModel.OpenAi.Realtime.RealtimeTranslate.Name, Is.EqualTo("gpt-realtime-translate"));
         Assert.That(ChatModel.OpenAi.Realtime.RealtimeWhisper.Name, Is.EqualTo("gpt-realtime-whisper"));
         Assert.That(ChatModel.OpenAi.OwnsModel("gpt-realtime-2"), Is.True);
+        Assert.That(ChatModel.OpenAi.Realtime.Realtime21.ContextTokens, Is.EqualTo(128_000));
+        Assert.That(ChatModel.OpenAi.Realtime.Realtime.ContextTokens, Is.EqualTo(32_000));
+        Assert.That(ChatModel.OpenAi.Realtime.Realtime15.ContextTokens, Is.EqualTo(32_000));
+        Assert.That(ChatModel.OpenAi.Realtime.RealtimeMini.ContextTokens, Is.EqualTo(32_000));
+        Assert.That(ChatModel.OpenAi.Realtime.RealtimeTranslate.ContextTokens, Is.EqualTo(16_000));
     }
 
     [Test]
@@ -50,6 +55,9 @@ public class RealtimeTests
 
         RealtimeConnectOptions translation = new RealtimeConnectOptions { Kind = RealtimeSessionKind.Translation };
         Assert.That(translation.BuildWebSocketUri().ToString(), Is.EqualTo("wss://api.openai.com/v1/realtime/translations?model=gpt-realtime-translate"));
+        Assert.That(new RealtimeConnectOptions().BuildWebSocketUri().ToString(), Is.EqualTo("wss://api.openai.com/v1/realtime?model=gpt-realtime-2.1"));
+        RealtimeConnectOptions transcription = new RealtimeConnectOptions { Kind = RealtimeSessionKind.Transcription };
+        Assert.That(transcription.BuildWebSocketUri().ToString(), Is.EqualTo("wss://api.openai.com/v1/realtime?intent=transcription"));
     }
 
     [Test]

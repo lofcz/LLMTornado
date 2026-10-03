@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -622,6 +622,13 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 		{
 			LLmProviders.OpenAi, (x, y, z, a) =>
 			{
+				if (z is CapabilityEndpoints.Responses)
+				{
+					ResponseRequest response = ResponseHelpers.ToResponseRequest(y, x.ResponseRequestParameters, x);
+					response.ApplyModelParameterPolicies(y);
+					return PreparePayload(response, x, y, z, GetSerializer(MaxTokensRenamerSettings, a));
+				}
+
 				if (x.Model is not null)
 				{
 					if (ChatModelOpenAi.TempIncompatibleModels.Contains(x.Model))
@@ -630,7 +637,7 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 					}
 					
 					// GPT-5.2, GPT-5.4, GPT-5.5, and GPT-5.6 parameter compatibility
-					bool hasNonNoneReasoning = x.ReasoningEffort is not null && x.ReasoningEffort != ChatReasoningEfforts.None;
+					bool? hasNonNoneReasoning = x.ReasoningEffort is { } effort ? effort != ChatReasoningEfforts.None : null;
 					if (ChatModelOpenAi.ShouldClearSamplingParams(x.Model, hasNonNoneReasoning))
 					{
 						x.Temperature = null;
@@ -652,8 +659,7 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 				}
 
 				JsonSerializerSettings settings = GetSerializer(MaxTokensRenamerSettings, a);
-				object obj = z is CapabilityEndpoints.Chat ? x : ResponseHelpers.ToResponseRequest(y, x.ResponseRequestParameters, x);
-				return PreparePayload(obj, x, y, z, settings);
+				return PreparePayload(x, x, y, z, settings);
 			}
 		},
 		{ LLmProviders.DeepSeek, (x, y, z, a) => PreparePayload(x, x, y, z, GetSerializer(EndpointBase.NullSettings, a)) },
@@ -855,6 +861,12 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 			return CapabilityEndpoints.Chat;
 		}
 		
+		// OpenAI Ultrafast uses the Responses API.
+		if (req.ServiceTier is ChatRequestServiceTiers.Ultrafast)
+		{
+			return CapabilityEndpoints.Responses;
+		}
+
 		// if we are missing metadata, use responses if we have parameters for it
 		if (req.Model.EndpointCapabilities is null || req.Model.EndpointCapabilities.Count is 0)
 		{
@@ -868,11 +880,12 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 			return CapabilityEndpoints.Responses;
 		}
 
-		// GPT-6 Astra and similar models accept Chat Completions without tools, but tool calling
-		// requires the Responses API (these models do not support reasoning_effort none).
+		// GPT-6 tool calling requires Responses, except Sol and Luna with explicit none effort.
 		if (req.Tools is { Count: > 0 } &&
 		    capabilities?.Contains(ChatModelEndpointCapabilities.Responses) == true &&
-		    ChatModelOpenAi.ToolsRequireResponsesModelsAllSet.Contains(req.Model))
+		    (ChatModelOpenAi.ToolsRequireResponsesModelsAllSet.Contains(req.Model) ||
+		     (req.ReasoningEffort is not ChatReasoningEfforts.None &&
+		      ChatModelOpenAi.ToolsWithReasoningRequireResponsesModelsAllSet.Contains(req.Model))))
 		{
 			return CapabilityEndpoints.Responses;
 		}

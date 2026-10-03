@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
@@ -261,24 +261,34 @@ public class ResponseRequest
     /// </summary>
     public TornadoRequestContent Serialize(IEndpointProvider provider, ResponseRequestSerializeOptions? options = null)
     {
-        // GPT-5.2, GPT-5.4, and GPT-5.5 parameter compatibility
+        ApplyModelParameterPolicies(provider);
+
+        string body = this.ToJson(options?.Pretty ?? false);
+        return new TornadoRequestContent(body, Model, null, provider, CapabilityEndpoints.Responses);
+    }
+
+    internal void ApplyModelParameterPolicies(IEndpointProvider provider)
+    {
         if (provider.Provider is LLmProviders.OpenAi)
         {
-            bool hasNonNoneReasoning = Reasoning?.Effort is not null && Reasoning.Effort != ResponseReasoningEfforts.None;
+            if (Model is not null && ChatModelOpenAi.TempIncompatibleModels.Contains(Model))
+            {
+                Temperature = null;
+            }
+
+            bool? hasNonNoneReasoning = Reasoning?.Effort is { } effort ? effort != ResponseReasoningEfforts.None : null;
             if (ChatModelOpenAi.ShouldClearSamplingParams(Model, hasNonNoneReasoning))
             {
                 Temperature = null;
                 TopP = null;
                 TopLogprobs = null;
+                Include = Include?.FindAll(field => field is not ResponseIncludeFields.MessageOutputTextLogprobs);
             }
 
             PromptCacheRetention? retention = PromptCacheRetention;
             ChatModelOpenAi.ApplyPromptCacheRetentionPolicy(Model, ref retention);
             PromptCacheRetention = retention;
         }
-        
-        string body = this.ToJson(options?.Pretty ?? false);
-        return new TornadoRequestContent(body, Model, null, provider, CapabilityEndpoints.Responses);
     }
 
     /// <summary>

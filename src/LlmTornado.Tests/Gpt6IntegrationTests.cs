@@ -1,4 +1,4 @@
-using LlmTornado.Chat;
+﻿using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
@@ -32,7 +32,7 @@ public class Gpt6IntegrationTests
         Assert.That(ChatModel.OpenAi.Gpt6.V6Astra.EndpointCapabilities, Does.Contain(ChatModelEndpointCapabilities.Chat));
         Assert.That(ChatModel.OpenAi.Gpt6.V6Astra.EndpointCapabilities, Does.Contain(ChatModelEndpointCapabilities.Responses));
         Assert.That(ChatModel.OpenAi.Gpt6.V6Astra.EndpointCapabilities, Does.Contain(ChatModelEndpointCapabilities.Batch));
-        Assert.That(ChatModelOpenAiGpt6.ModelsAll, Has.Count.EqualTo(1));
+        Assert.That(ChatModelOpenAiGpt6.ModelsAll, Has.Count.EqualTo(4));
         Assert.That(ChatModelOpenAi.ReasoningModelsAll, Does.Contain(ChatModel.OpenAi.Gpt6.V6Astra));
         Assert.That(ChatModelOpenAi.WebSearchCompatibleModelsAll, Does.Contain(ChatModel.OpenAi.Gpt6.V6Astra));
         Assert.That(ChatModelOpenAi.ComputerUseModelsAllSet, Does.Contain(ChatModel.OpenAi.Gpt6.V6Astra));
@@ -123,18 +123,28 @@ public class Gpt6IntegrationTests
     }
 
     [Test]
-    public void Gpt6_ServiceTierFast_Serializes()
+    public void Gpt6_ServiceTiers_SerializeAndSelectEndpoints()
     {
-        ChatRequest request = new ChatRequest
+        foreach (var (tier, wireValue, endpoint) in new[]
         {
-            Model = ChatModel.OpenAi.Gpt6.V6Astra,
-            Messages = [new ChatMessage(ChatMessageRoles.User, "Hello")],
-            ServiceTier = ChatRequestServiceTiers.Fast
-        };
+            (ChatRequestServiceTiers.Fast, "fast", CapabilityEndpoints.Chat),
+            (ChatRequestServiceTiers.Ultrafast, "ultrafast", CapabilityEndpoints.Responses)
+        })
+        {
+            ChatRequest request = new ChatRequest
+            {
+                Model = ChatModel.OpenAi.Gpt6.V6Astra,
+                Messages = [new ChatMessage(ChatMessageRoles.User, "Hello")],
+                ServiceTier = tier,
+                ReasoningEffort = ChatReasoningEfforts.Max
+            };
 
-        TornadoRequestContent serialized = request.Serialize(_provider);
-        JObject body = JObject.Parse(serialized.Body.ToString()!);
-
-        Assert.That(body["service_tier"]?.ToString(), Is.EqualTo("fast"));
+            TornadoRequestContent serialized = request.Serialize(_provider);
+            JObject body = JObject.Parse(serialized.Body.ToString()!);
+            Assert.That(serialized.CapabilityEndpoint, Is.EqualTo(endpoint));
+            Assert.That(body["service_tier"]?.ToString(), Is.EqualTo(wireValue));
+            string effortPath = endpoint is CapabilityEndpoints.Responses ? "reasoning.effort" : "reasoning_effort";
+            Assert.That(body.SelectToken(effortPath)?.ToString(), Is.EqualTo("max"));
+        }
     }
 }

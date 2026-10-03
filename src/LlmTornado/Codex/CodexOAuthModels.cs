@@ -19,7 +19,7 @@ public sealed class CodexOAuthOptions
     /// <summary>
     /// Codex protocol version used when the caller does not provide an override.
     /// </summary>
-    public const string DefaultCodexProtocolVersion = "0.146.0";
+    public const string DefaultCodexProtocolVersion = "0.160.0";
 
     /// <summary>
     /// OpenAI OAuth issuer.

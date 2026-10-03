@@ -127,7 +127,7 @@ public class CodexOAuthTests
             {
                 ["models"] = new JArray
                 {
-                    BackendModel("gpt-5.4", true, "low", "medium", "high"),
+                    BackendModel("gpt-6-astra", true, "low", "medium", "high"),
                     BackendModel("gpt-5.3-codex", false, new[] { "medium", "high" }, "list"),
                     BackendModel("hidden-model", false, "medium", visibility: "hide")
                 }
@@ -150,13 +150,13 @@ public class CodexOAuthTests
             Assert.That(modelAccount, Is.EqualTo("account-1"));
             Assert.That(catalogClientVersion, Is.EqualTo(CodexOAuthOptions.DefaultCodexProtocolVersion));
             Assert.That(catalogClientVersion, Is.Not.EqualTo("1.2.3"));
-            Assert.That(models.Select(model => model.Model), Is.EqualTo(new[] { "gpt-5.4", "gpt-5.3-codex" }));
+            Assert.That(models.Select(model => model.Model), Is.EqualTo(new[] { "gpt-6-astra", "gpt-5.3-codex" }));
             Assert.That(
                 models[0].SupportedReasoningEfforts.Select(effort => effort.ReasoningEffort),
                 Is.EqualTo(new[] { "low", "medium", "high" }));
             Assert.That(
                 models[0].ServiceTiers.Select(serviceTier => serviceTier.Id),
-                Is.EqualTo(new[] { "priority", "future-tier" }));
+                Is.EqualTo(new[] { "priority", "future-tier", "ultrafast" }));
             Assert.That(models[0].DefaultServiceTier, Is.EqualTo("priority"));
         });
 
@@ -212,7 +212,7 @@ public class CodexOAuthTests
                 {
                     ["models"] = new JArray
                     {
-                        BackendModel("gpt-5.4", true, new[] { "medium", "high" }, "list")
+                        BackendModel("gpt-6-astra", true, new[] { "medium", "high" }, "list")
                     }
                 });
             }
@@ -245,14 +245,14 @@ public class CodexOAuthTests
             });
         CodexOAuthThread thread = await session.StartThreadAsync(new CodexOAuthThreadOptions
         {
-            Model = "gpt-5.4",
+            Model = "gpt-6-astra",
             Instructions = "Reply briefly."
         });
         List<string> deltas = [];
         CodexOAuthTurnResult first = await thread.RunAsync("First", new CodexOAuthTurnOptions
         {
             ReasoningEffort = "high",
-            ServiceTier = "priority",
+            ServiceTier = "ultrafast",
             OnTextDelta = delta =>
             {
                 deltas.Add(delta.Delta);
@@ -266,12 +266,12 @@ public class CodexOAuthTests
             Assert.That(first.FinalResponse, Is.EqualTo("Codex reply"));
             Assert.That(second.ResponseId, Is.EqualTo("response-2"));
             Assert.That(deltas, Is.EqualTo(new[] { "Codex ", "reply" }));
-            Assert.That(payloads[0].Value<string>("instructions"), Is.EqualTo("gpt-5.4 base instructions"));
+            Assert.That(payloads[0].Value<string>("instructions"), Is.EqualTo("gpt-6-astra base instructions"));
             Assert.That(payloads[0]["input"]?[0]?["role"]?.Value<string>(), Is.EqualTo("developer"));
             Assert.That(payloads[0]["input"]?[1]?["content"]?[0]?["type"]?.Value<string>(), Is.EqualTo("input_text"));
             Assert.That(payloads[0].ToString(Formatting.None), Does.Not.Contain("image"));
             Assert.That(payloads[0]["include"]?[0]?.Value<string>(), Is.EqualTo("reasoning.encrypted_content"));
-            Assert.That(payloads[0].Value<string>("service_tier"), Is.EqualTo("priority"));
+            Assert.That(payloads[0].Value<string>("service_tier"), Is.EqualTo("ultrafast"));
             Assert.That(payloads[0]["tools"], Is.Empty);
             Assert.That(payloads[0].Value<string>("tool_choice"), Is.EqualTo("auto"));
             Assert.That(payloads[0].Value<bool>("parallel_tool_calls"), Is.False);
@@ -1013,7 +1013,8 @@ public class CodexOAuthTests
         bool isDefault,
         IReadOnlyList<string> efforts,
         string visibility)
-        => new JObject
+    {
+        JObject result = new JObject
         {
             ["slug"] = slug,
             ["display_name"] = slug,
@@ -1043,6 +1044,12 @@ public class CodexOAuthTests
             }),
             ["input_modalities"] = new JArray("text")
         };
+        if (slug == "gpt-6-astra")
+        {
+            ((JArray)result["service_tiers"]!).Add(new JObject { ["id"] = "ultrafast", ["name"] = "Ultrafast" });
+        }
+        return result;
+    }
 
     private static string Jwt(JObject claims)
     {

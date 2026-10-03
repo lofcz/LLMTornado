@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
@@ -130,6 +130,14 @@ public class RealtimeInputTranscription
     [JsonProperty("language")]
     public string? Language { get; set; }
 
+    /// <summary>Expected input languages for <c>gpt-live-transcribe</c>. Do not combine with <see cref="Language"/>.</summary>
+    [JsonProperty("languages")]
+    public List<string>? Languages { get; set; }
+
+    /// <summary>Vocabulary hints for <c>gpt-live-transcribe</c>.</summary>
+    [JsonProperty("keywords")]
+    public List<string>? Keywords { get; set; }
+
     [JsonProperty("prompt")]
     public string? Prompt { get; set; }
 
@@ -143,6 +151,9 @@ public class RealtimeInputTranscription
 /// </summary>
 public class RealtimeAudioInputConfig
 {
+    private RealtimeTurnDetection? turnDetection;
+    private bool turnDetectionSet;
+
     [JsonProperty("format")]
     public RealtimeAudioFormat? Format { get; set; }
 
@@ -152,8 +163,19 @@ public class RealtimeAudioInputConfig
     [JsonProperty("transcription")]
     public RealtimeInputTranscription? Transcription { get; set; }
 
-    [JsonProperty("turn_detection")]
-    public RealtimeTurnDetection? TurnDetection { get; set; }
+    [JsonProperty("turn_detection", NullValueHandling = NullValueHandling.Include)]
+    public RealtimeTurnDetection? TurnDetection
+    {
+        get => turnDetection;
+        set
+        {
+            turnDetection = value;
+            turnDetectionSet = true;
+        }
+    }
+
+    /// <summary>Include explicit null values to disable turn detection.</summary>
+    public bool ShouldSerializeTurnDetection() => turnDetectionSet;
 }
 
 /// <summary>
@@ -213,6 +235,7 @@ public class RealtimeVoiceSessionConfig
     public string Type { get; set; } = "realtime";
 
     [JsonProperty("model")]
+    [JsonConverter(typeof(ChatModelJsonConverter))]
     public ChatModel? Model { get; set; }
 
     [JsonProperty("instructions")]
@@ -286,6 +309,28 @@ public class RealtimeTranscriptionSessionConfig
     [JsonProperty("include")]
     public List<string>? Include { get; set; }
 
+    /// <summary>Streaming transcription with <c>gpt-live-transcribe</c> and manual audio commits.</summary>
+    public static RealtimeTranscriptionSessionConfig ForLiveTranscribe(string language = "en", string delay = "low")
+    {
+        return new RealtimeTranscriptionSessionConfig
+        {
+            Audio = new RealtimeAudioConfig
+            {
+                Input = new RealtimeAudioInputConfig
+                {
+                    Format = new RealtimeAudioFormat { Type = "audio/pcm", Rate = 24000 },
+                    Transcription = new RealtimeInputTranscription
+                    {
+                        Model = ChatModelOpenAiRealtime.ModelLiveTranscribe.Name,
+                        Languages = [language],
+                        Delay = delay
+                    },
+                    TurnDetection = null
+                }
+            }
+        };
+    }
+
     /// <summary>Default config for <c>gpt-realtime-whisper</c> with manual commit (turn_detection null).</summary>
     public static RealtimeTranscriptionSessionConfig ForRealtimeWhisper(string language = "en", string delay = "low")
     {
@@ -334,45 +379,6 @@ public class RealtimeClientSecretResponse
 
     [JsonProperty("session")]
     public JObject? Session { get; set; }
-}
-
-/// <summary>
-/// Legacy-compatible response from <c>POST /v1/realtime/transcription_sessions</c>.
-/// </summary>
-public class RealtimeSessionCreateResponse
-{
-    [JsonProperty("id")]
-    public string? Id { get; set; }
-
-    [JsonProperty("object")]
-    public string? Object { get; set; }
-
-    [JsonProperty("type")]
-    public string? Type { get; set; }
-
-    [JsonProperty("model")]
-    public string? Model { get; set; }
-
-    [JsonProperty("client_secret")]
-    public RealtimeEphemeralSecret? ClientSecret { get; set; }
-
-    [JsonProperty("expires_at")]
-    public long? ExpiresAt { get; set; }
-
-    [JsonExtensionData]
-    public Dictionary<string, JToken>? ExtensionData { get; set; }
-}
-
-/// <summary>
-/// Ephemeral API token for browser/mobile Realtime connections.
-/// </summary>
-public class RealtimeEphemeralSecret
-{
-    [JsonProperty("value")]
-    public string? Value { get; set; }
-
-    [JsonProperty("expires_at")]
-    public long? ExpiresAt { get; set; }
 }
 
 /// <summary>

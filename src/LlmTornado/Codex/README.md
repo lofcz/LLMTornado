@@ -207,6 +207,25 @@ CodexOAuthTurnResult turn = await thread.RunAsync(
 
 Use `CodexTurnOptions` instead of `CodexOAuthTurnOptions` with an app-server thread. Omit `ServiceTier` to let the backend use the catalog default.
 
+Ultrafast is available for GPT-6 Astra on Pro $500 and eligible Enterprise and Edu workspaces.
+Access depends on the account and workspace permissions. See [Ultrafast availability](https://help.openai.com/en/articles/20001275-chatgpt-work-and-codex).
+
+If the model catalog lists `ultrafast`, select that tier:
+
+```csharp
+CodexModel astra = models.First(x => x.Model == "gpt-6-astra");
+CodexServiceTier ultrafast = astra.ServiceTiers.First(x => x.Id == "ultrafast");
+CodexOAuthThread ultrafastThread = await codex.StartThreadAsync(
+    new CodexOAuthThreadOptions { Model = astra.Model });
+
+await ultrafastThread.RunAsync("Summarize the current changes.",
+    new CodexOAuthTurnOptions { ServiceTier = ultrafast.Id });
+```
+
+For app-server sessions, use `CodexThreadOptions` and `CodexTurnOptions`.
+API-key requests use separate API billing. For Responses requests, set `ServiceTier = ChatRequestServiceTiers.Ultrafast`.
+See [API Ultrafast mode](https://developers.openai.com/api/docs/guides/ultrafast-mode).
+
 ## Streaming and multiple turns
 
 Use `OnTextDelta` to update the UI while a response is generated:
@@ -254,7 +273,7 @@ Function outputs must follow their matching calls and use the same call identifi
 
 `CodexOAuthOptions.ClientVersion` identifies your application in request headers and the user agent. When it is omitted, LLMTornado uses its assembly version.
 
-`CodexOAuthOptions.CodexProtocolVersion` is a separate value used as `client_version` during model discovery. Its default is `0.146.0`.
+`CodexOAuthOptions.CodexProtocolVersion` is a separate value used as `client_version` during model discovery. Its default is `0.160.0`.
 
 Override only the protocol version when the Codex backend requires a newer value:
 
@@ -263,7 +282,7 @@ await using CodexOAuthSession codex = await api.Codex.ConnectOAuthAsync(
     new CodexOAuthOptions
     {
         ClientVersion = "1.0.0",
-        CodexProtocolVersion = "0.147.0"
+        CodexProtocolVersion = "0.160.0"
     });
 ```
 

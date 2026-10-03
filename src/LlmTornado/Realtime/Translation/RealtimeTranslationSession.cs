@@ -1,4 +1,4 @@
-#if MODERN
+﻿#if MODERN
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,13 +14,15 @@ public sealed class RealtimeTranslationSession : IAsyncDisposable
 {
     private readonly RealtimeSession inner;
     private readonly RealtimeTranslationEventHandler? eventHandler;
+    private readonly CancellationTokenSource connectionCancellation;
     private readonly TaskCompletionSource sessionClosedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
     private bool sessionClosedReceived;
 
-    internal RealtimeTranslationSession(RealtimeSession inner, RealtimeTranslationEventHandler? eventHandler)
+    internal RealtimeTranslationSession(RealtimeSession inner, RealtimeTranslationEventHandler? eventHandler, CancellationTokenSource connectionCancellation)
     {
         this.inner = inner;
         this.eventHandler = eventHandler;
+        this.connectionCancellation = connectionCancellation;
     }
 
     /// <summary>
@@ -31,7 +33,8 @@ public sealed class RealtimeTranslationSession : IAsyncDisposable
         RealtimeTranslationConnectOptions options,
         CancellationToken cancellationToken = default)
     {
-        RealtimeTranslationSession? sessionRef = null;
+        TaskCompletionSource<RealtimeTranslationSession> ready = new TaskCompletionSource<RealtimeTranslationSession>(TaskCreationOptions.RunContinuationsAsynchronously);
+        CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(options.CancellationToken, cancellationToken);
 
         RealtimeConnectOptions connectOptions = new RealtimeConnectOptions
         {
@@ -39,25 +42,44 @@ public sealed class RealtimeTranslationSession : IAsyncDisposable
             Model = options.Model,
             ApiKey = options.ApiKey,
             SafetyIdentifier = options.SafetyIdentifier,
-            CancellationToken = cancellationToken,
-            OnEvent = evt =>
+            CancellationToken = linked.Token,
+            OnEventAsync = async evt =>
             {
-                if (sessionRef is null || string.IsNullOrWhiteSpace(evt.RawJson))
+                if (string.IsNullOrWhiteSpace(evt.RawJson))
                 {
                     return;
                 }
 
                 RealtimeTranslationEvent parsed = VendorOpenAiRealtimeTranslation.ParseEvent(evt.RawJson);
-                _ = sessionRef.DispatchEventAsync(parsed);
+                RealtimeTranslationSession session = await ready.Task.ConfigureAwait(false);
+                await session.DispatchEventAsync(parsed).ConfigureAwait(false);
             }
         };
 
-        RealtimeSession inner = await RealtimeSession.ConnectAsync(api, connectOptions).ConfigureAwait(false);
-        RealtimeTranslationSession session = new RealtimeTranslationSession(inner, options.EventHandler);
-        sessionRef = session;
+        RealtimeSession inner;
+        try
+        {
+            inner = await RealtimeSession.ConnectAsync(api, connectOptions).ConfigureAwait(false);
+        }
+        catch
+        {
+            linked.Dispose();
+            throw;
+        }
 
-        await session.UpdateSessionAsync(options.Config, cancellationToken).ConfigureAwait(false);
-        return session;
+        RealtimeTranslationSession session = new RealtimeTranslationSession(inner, options.EventHandler, linked);
+        ready.SetResult(session);
+
+        try
+        {
+            await session.UpdateSessionAsync(options.Config, linked.Token).ConfigureAwait(false);
+            return session;
+        }
+        catch
+        {
+            await session.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
     }
 
     /// <summary>
@@ -145,7 +167,6 @@ public sealed class RealtimeTranslationSession : IAsyncDisposable
         if (evt.EventType is RealtimeTranslationEventTypes.SessionClosed)
         {
             sessionClosedReceived = true;
-            sessionClosedTcs.TrySetResult();
         }
 
         if (eventHandler?.EventHandler is not null)
@@ -174,10 +195,25 @@ public sealed class RealtimeTranslationSession : IAsyncDisposable
                 await eventHandler.ErrorHandler(evt).ConfigureAwait(false);
                 break;
         }
+
+        if (evt.EventType is RealtimeTranslationEventTypes.SessionClosed)
+        {
+            sessionClosedTcs.TrySetResult();
+        }
     }
 
     /// <inheritdoc />
-    public ValueTask DisposeAsync() => inner.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await inner.DisposeAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            connectionCancellation.Dispose();
+        }
+    }
 }
 #else
 using System;
