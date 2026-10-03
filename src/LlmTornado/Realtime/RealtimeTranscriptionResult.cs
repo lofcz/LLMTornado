@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace LlmTornado.Realtime;
@@ -21,4 +21,30 @@ public class RealtimeTranscriptionResult
     public List<string> Errors { get; } = [];
 
     internal TaskCompletionSource<bool> Completed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    internal async Task DispatchAsync(RealtimeServerEvent evt, RealtimeTranscriptionStreamEventHandler handler)
+    {
+        bool terminal = false;
+        switch (evt.Type)
+        {
+            case RealtimeEventTypes.TranscriptionDelta:
+                Deltas.Add(evt.Delta ?? string.Empty);
+                break;
+            case RealtimeEventTypes.TranscriptionCompleted:
+                FinalTranscript = evt.Transcript;
+                terminal = true;
+                break;
+            case RealtimeEventTypes.TranscriptionFailed:
+            case RealtimeEventTypes.Error:
+                Errors.Add(evt.Error?.Message ?? evt.Error?.Code ?? "Transcription failed.");
+                terminal = true;
+                break;
+        }
+
+        await handler.DispatchAsync(evt).ConfigureAwait(false);
+        if (terminal)
+        {
+            Completed.TrySetResult(evt.Type is RealtimeEventTypes.TranscriptionCompleted);
+        }
+    }
 }

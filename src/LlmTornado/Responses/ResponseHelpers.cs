@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -190,6 +190,14 @@ internal static class ResponseHelpers
         chatRequest.Preserialize(provider);
         request ??= new ResponseRequest();
 
+        ReasoningConfiguration? reasoning = request.Reasoning;
+        if (provider.Provider is LLmProviders.OpenAi &&
+            reasoning?.Effort is null && chatRequest.ReasoningEffort is { } effort &&
+            Enum.TryParse(effort.ToString(), out ResponseReasoningEfforts responseEffort))
+        {
+            reasoning = new ReasoningConfiguration(responseEffort, reasoning?.Summary);
+        }
+
         string? instructions = request.Instructions;
 
         if (instructions is null)
@@ -235,7 +243,7 @@ internal static class ResponseHelpers
                 : null),
             Text = request.Text ?? ToResponseConfiguration(chatRequest.ResponseFormat),
             Prompt = request.Prompt,
-            Reasoning = request.Reasoning,
+            Reasoning = reasoning,
             Stream = false,
             Verbosity = request.Verbosity,
             PromptCacheKey = request.PromptCacheKey ?? chatRequest.PromptCacheKey,

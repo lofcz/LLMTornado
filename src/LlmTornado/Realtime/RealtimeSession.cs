@@ -1,4 +1,4 @@
-#if MODERN
+﻿#if MODERN
 using System;
 using System.Net.WebSockets;
 using System.Text;
@@ -15,16 +15,17 @@ namespace LlmTornado.Realtime;
 /// </summary>
 public sealed class RealtimeSession : IAsyncDisposable
 {
-    private readonly ClientWebSocket webSocket;
+    private readonly WebSocket webSocket;
     private readonly RealtimeConnectOptions options;
     private readonly CancellationTokenSource linkedCts;
     private Task? receiveTask;
 
-    private RealtimeSession(ClientWebSocket webSocket, RealtimeConnectOptions options, CancellationTokenSource linkedCts)
+    internal RealtimeSession(WebSocket webSocket, RealtimeConnectOptions options, CancellationTokenSource linkedCts)
     {
         this.webSocket = webSocket;
         this.options = options;
         this.linkedCts = linkedCts;
+        receiveTask = ReceiveLoopAsync();
     }
 
     /// <summary>
@@ -58,12 +59,18 @@ public sealed class RealtimeSession : IAsyncDisposable
         }
 
         CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(options.CancellationToken);
-        await ws.ConnectAsync(options.BuildWebSocketUri(), linked.Token).ConfigureAwait(false);
-
-        RealtimeSession session = new RealtimeSession(ws, options, linked);
-        options.OnOpen?.Invoke();
-        session.receiveTask = session.ReceiveLoopAsync();
-        return session;
+        try
+        {
+            await ws.ConnectAsync(options.BuildWebSocketUri(), linked.Token).ConfigureAwait(false);
+            options.OnOpen?.Invoke();
+            return new RealtimeSession(ws, options, linked);
+        }
+        catch
+        {
+            ws.Dispose();
+            linked.Dispose();
+            throw;
+        }
     }
 
     /// <summary>
@@ -88,7 +95,10 @@ public sealed class RealtimeSession : IAsyncDisposable
     /// </summary>
     public Task AppendInputAudioAsync(string base64Pcm16, CancellationToken cancellationToken = default)
     {
-        return SendAsync(new { type = "input_audio_buffer.append", audio = base64Pcm16 }, cancellationToken);
+        string type = options.Kind is RealtimeSessionKind.Translation
+            ? "session.input_audio_buffer.append"
+            : "input_audio_buffer.append";
+        return SendAsync(new { type, audio = base64Pcm16 }, cancellationToken);
     }
 
     /// <summary>
@@ -96,6 +106,11 @@ public sealed class RealtimeSession : IAsyncDisposable
     /// </summary>
     public Task CommitInputAudioAsync(CancellationToken cancellationToken = default)
     {
+        if (options.Kind is RealtimeSessionKind.Translation)
+        {
+            throw new InvalidOperationException("Translation sessions stream continuously and do not support audio commits.");
+        }
+
         return SendAsync(new { type = "input_audio_buffer.commit" }, cancellationToken);
     }
 
@@ -104,15 +119,22 @@ public sealed class RealtimeSession : IAsyncDisposable
     /// </summary>
     public Task CreateResponseAsync(CancellationToken cancellationToken = default)
     {
+        if (options.Kind is not RealtimeSessionKind.Voice)
+        {
+            throw new InvalidOperationException("Only voice-agent sessions support response.create.");
+        }
+
         return SendAsync(new { type = "response.create" }, cancellationToken);
     }
 
     /// <summary>
-    /// Closes the realtime session gracefully.
+    /// Flushes translation output with <c>session.close</c>, or closes a voice/transcription WebSocket.
     /// </summary>
     public Task CloseSessionAsync(CancellationToken cancellationToken = default)
     {
-        return SendAsync(new { type = "session.close" }, cancellationToken);
+        return options.Kind is RealtimeSessionKind.Translation
+            ? SendAsync(new { type = "session.close" }, cancellationToken)
+            : webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, cancellationToken);
     }
 
     /// <summary>
@@ -128,12 +150,15 @@ public sealed class RealtimeSession : IAsyncDisposable
     {
         byte[] buffer = new byte[1024 * 64];
         StringBuilder sb = new StringBuilder();
+        Decoder decoder = Encoding.UTF8.GetDecoder();
+        char[] chars = new char[Encoding.UTF8.GetMaxCharCount(buffer.Length)];
 
         try
         {
             while (webSocket.State == WebSocketState.Open && !linkedCts.IsCancellationRequested)
             {
                 sb.Clear();
+                decoder.Reset();
                 ValueWebSocketReceiveResult result;
 
                 do
@@ -141,12 +166,13 @@ public sealed class RealtimeSession : IAsyncDisposable
                     result = await webSocket.ReceiveAsync(buffer.AsMemory(), linkedCts.Token).ConfigureAwait(false);
                     if (result.MessageType == WebSocketMessageType.Close)
                     {
-                        await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None).ConfigureAwait(false);
+                        await webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, linkedCts.Token).ConfigureAwait(false);
                         options.OnClose?.Invoke(webSocket.CloseStatusDescription);
                         return;
                     }
 
-                    sb.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
+                    int charCount = decoder.GetChars(buffer, 0, result.Count, chars, 0, result.EndOfMessage);
+                    sb.Append(chars, 0, charCount);
                 }
                 while (!result.EndOfMessage);
 
@@ -173,6 +199,10 @@ public sealed class RealtimeSession : IAsyncDisposable
                 if (evt is not null)
                 {
                     options.OnEvent?.Invoke(evt);
+                    if (options.OnEventAsync is not null)
+                    {
+                        await options.OnEventAsync(evt).ConfigureAwait(false);
+                    }
                 }
             }
         }
@@ -193,7 +223,7 @@ public sealed class RealtimeSession : IAsyncDisposable
         {
             if (webSocket.State == WebSocketState.Open)
             {
-                await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "dispose", CancellationToken.None).ConfigureAwait(false);
+                await webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "dispose", CancellationToken.None).ConfigureAwait(false);
             }
         }
         catch
@@ -202,6 +232,7 @@ public sealed class RealtimeSession : IAsyncDisposable
         }
 
         linkedCts.Cancel();
+        webSocket.Abort();
         if (receiveTask is not null)
         {
             try

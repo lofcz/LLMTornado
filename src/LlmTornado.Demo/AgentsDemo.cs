@@ -552,12 +552,12 @@ public class AgentsDemo : DemoBase
     {
         TornadoAgent agent = new TornadoAgent(
             Program.Connect(),
-            ChatModel.OpenAi.Codex.MiniLatest,
+            ChatModel.OpenAi.Gpt6.V61Sol,
             instructions: "You are a useful assistant.");
 
         agent.ResponseOptions = new ResponseRequest()
         {
-            Tools = [new ResponseLocalShellTool()]
+            Tools = [new ResponseShellTool()]
         };
 
         Conversation convo = await agent.Run("what files are in current directory?",streaming:false, onAgentRunnerEvent: (evt) => {
@@ -583,11 +583,24 @@ public class AgentsDemo : DemoBase
 
         agent.ResponseOptions.PreviousResponseId = lastMsg.NativeObject is ResponseResult rr ? rr.Id : null;
 
-        agent.ResponseOptions.InputItems = [new LocalShellCallOutput()
+        ResponseShellToolCallItem? shellCall = calls?.Select(x => x.BuiltInToolCall?.Data)
+            .OfType<ResponseShellToolCallItem>().FirstOrDefault();
+        Assert.That(shellCall, Is.NotNull);
+
+        agent.ResponseOptions.InputItems = [new ShellCallOutput()
         {
-            Id = calls?.First().BuiltInToolCall.Name ?? "",
-            Output = "AgentsDemo.cs\nDemoBase.cs\nProgram.cs\nTornadoTestAttribute.cs",
-            Status = ResponseMessageStatuses.Completed
+            CallId = shellCall!.CallId ?? "",
+            MaxOutputLength = shellCall.Action.MaxOutputLength,
+            Output = [new ResponseShellCommandOutput
+            {
+                Stdout = "AgentsDemo.cs\nDemoBase.cs\nProgram.cs\nTornadoTestAttribute.cs",
+                Stderr = string.Empty,
+                Outcome = new ResponseShellCommandOutcome
+                {
+                    Type = ResponseShellCommandOutcomeType.Exit,
+                    ExitCode = 0
+                }
+            }]
         }];
 
         //ChatMessage response = new ChatMessage(ChatMessageRoles.Tool, "Hello.txt")

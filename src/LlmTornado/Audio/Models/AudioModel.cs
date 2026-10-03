@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using LlmTornado.Audio.Models.Cohere;
@@ -7,6 +7,7 @@ using LlmTornado.Audio.Models.Groq;
 using LlmTornado.Audio.Models.MiniMax;
 using LlmTornado.Audio.Models.Mistral;
 using LlmTornado.Audio.Models.OpenAi;
+using LlmTornado.Audio.Models.OpenRouter;
 using LlmTornado.Audio.Models.XAi;
 using LlmTornado.Audio.Models.Zai;
 using LlmTornado.Code;
@@ -25,6 +26,11 @@ public class AudioModel : ModelBase
     /// Models from OpenAI.
     /// </summary>
     public static readonly AudioModelOpenAi OpenAi = new AudioModelOpenAi();
+
+    /// <summary>
+    /// Models provided by OpenRouter.
+    /// </summary>
+    public static readonly AudioModelOpenRouter OpenRouter = new AudioModelOpenRouter();
     
     /// <summary>
     /// Models provided by Groq.
@@ -91,7 +97,7 @@ public class AudioModel : ModelBase
     public static List<BaseVendorModelProvider> AllProviders => LazyAllProviders.Value;
 
     private static readonly Lazy<List<BaseVendorModelProvider>> LazyAllProviders = new Lazy<List<BaseVendorModelProvider>>(() => [
-        OpenAi, Groq, Mistral, Zai, MiniMax, Google, Cohere, XAi
+        OpenAi, OpenRouter, Groq, Mistral, Zai, MiniMax, Google, Cohere, XAi
     ]);
     
     /// <summary>

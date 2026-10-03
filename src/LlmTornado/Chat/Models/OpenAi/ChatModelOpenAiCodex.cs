@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -11,34 +11,8 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelOpenAiCodex : IVendorModelClassProvider
 {
     /// <summary>
-    /// Computer use is a practical application of our Computer-Using Agent (CUA) model, computer-use-preview, which combines the vision capabilities of GPT-4o with advanced reasoning to simulate controlling computer interfaces and performing tasks.
-    /// </summary>
-    public static readonly ChatModel ModelComputerUsePreview = new ChatModel("computer-use-preview", LLmProviders.OpenAi, 200_000)
-    {
-        EndpointCapabilities = [ ChatModelEndpointCapabilities.Responses, ChatModelEndpointCapabilities.Batch ]
-    };
-
-    /// <summary>
-    /// <inheritdoc cref="ModelComputerUsePreview"/>
-    /// </summary>
-    public readonly ChatModel ComputerUsePreview = ModelComputerUsePreview;
-
-    
-    /// <summary>
-    /// codex-mini-latest is a fine-tuned version of o4-mini specifically for use in Codex CLI. For direct use in the API, we recommend starting with gpt-4.1.
-    /// </summary>
-    public static readonly ChatModel ModelMiniLatest = new ChatModel("codex-mini-latest", LLmProviders.OpenAi, 200_000)
-    {
-        EndpointCapabilities = [ ChatModelEndpointCapabilities.Responses, ChatModelEndpointCapabilities.Batch ]
-    };
-
-    /// <summary>
-    /// <inheritdoc cref="ModelMiniLatest"/>
-    /// </summary>
-    public readonly ChatModel MiniLatest = ModelMiniLatest;
-
-    /// <summary>
-    /// GPT-5.3-Codex is OpenAI's most capable agentic coding model to date.
+    /// GPT-5.3-Codex is an agentic coding model, deprecated October 1, 2026.
+    /// Available in the API until April 1, 2027. Use GPT-6 Sol for new requests.
     /// Supports low, medium, high, and xhigh reasoning effort settings.
     /// 400,000 context window, 128,000 max output tokens, Aug 31, 2025 knowledge cutoff.
     /// Like the other Codex models, it is served only via the Responses (and Batch) endpoints,
@@ -59,7 +33,7 @@ public class ChatModelOpenAiCodex : IVendorModelClassProvider
     /// </summary>
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
-    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelMiniLatest, ModelComputerUsePreview, ModelGpt53Codex]);
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelGpt53Codex]);
     
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

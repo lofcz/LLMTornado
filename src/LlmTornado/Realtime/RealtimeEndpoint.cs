@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Chat.Models;
@@ -36,7 +36,7 @@ public class RealtimeEndpoint : EndpointBase
         CancellationToken cancellationToken = default)
     {
         IEndpointProvider provider = Api.ResolveProvider(LLmProviders.OpenAi);
-        return HttpPost<RealtimeClientSecretResponse>(provider, Endpoint, "/client_secrets", postData: Serialize(request), ct: cancellationToken);
+        return HttpPost<RealtimeClientSecretResponse>(provider, Endpoint, provider.ApiUrl(Endpoint, "/client_secrets"), postData: Serialize(request), ct: cancellationToken);
     }
 
     /// <summary>
@@ -69,15 +69,16 @@ public class RealtimeEndpoint : EndpointBase
         session.Audio.Output ??= new RealtimeAudioOutputConfig();
         session.Audio.Output.Language = targetLanguage;
 
-        return CreateClientSecret(new RealtimeClientSecretRequest
+        IEndpointProvider provider = Api.ResolveProvider(LLmProviders.OpenAi);
+        return HttpPost<RealtimeClientSecretResponse>(provider, Endpoint, provider.ApiUrl(Endpoint, "/translations/client_secrets"), postData: Serialize(new
         {
-            ExpiresAfter = new RealtimeClientSecretExpiresAfter { Seconds = secretTtlSeconds },
-            Session = session
-        }, cancellationToken);
+            expires_after = new RealtimeClientSecretExpiresAfter { Seconds = secretTtlSeconds },
+            session = new { model = session.Model.ApiName ?? session.Model.Name, audio = session.Audio }
+        }), ct: cancellationToken);
     }
 
     /// <summary>
-    /// Creates a client secret for a transcription session (<c>gpt-realtime-whisper</c>).
+    /// Creates a client secret for a transcription session (<c>gpt-live-transcribe</c> by default).
     /// </summary>
     public Task<HttpCallResult<RealtimeClientSecretResponse>> CreateClientSecretForTranscription(
         RealtimeTranscriptionSessionConfig? session = null,
@@ -87,35 +88,8 @@ public class RealtimeEndpoint : EndpointBase
         return CreateClientSecret(new RealtimeClientSecretRequest
         {
             ExpiresAfter = new RealtimeClientSecretExpiresAfter { Seconds = secretTtlSeconds },
-            Session = session ?? RealtimeTranscriptionSessionConfig.ForRealtimeWhisper()
+            Session = session ?? RealtimeTranscriptionSessionConfig.ForLiveTranscribe()
         }, cancellationToken);
-    }
-
-    /// <summary>
-    /// Legacy session creation (<c>POST /v1/realtime/sessions</c>). Prefer <see cref="CreateClientSecret"/> for new apps.
-    /// </summary>
-    public Task<HttpCallResult<RealtimeSessionCreateResponse>> CreateSession(
-        RealtimeVoiceSessionConfig session,
-        CancellationToken cancellationToken = default)
-    {
-        IEndpointProvider provider = Api.ResolveProvider(LLmProviders.OpenAi);
-        return HttpPost<RealtimeSessionCreateResponse>(provider, Endpoint, "/sessions", postData: Serialize(session), ct: cancellationToken);
-    }
-
-    /// <summary>
-    /// Legacy transcription session (<c>POST /v1/realtime/transcription_sessions</c>).
-    /// </summary>
-    public Task<HttpCallResult<RealtimeSessionCreateResponse>> CreateTranscriptionSession(
-        RealtimeTranscriptionSessionConfig? session = null,
-        CancellationToken cancellationToken = default)
-    {
-        IEndpointProvider provider = Api.ResolveProvider(LLmProviders.OpenAi);
-        return HttpPost<RealtimeSessionCreateResponse>(
-            provider,
-            Endpoint,
-            "/transcription_sessions",
-            postData: Serialize(session ?? RealtimeTranscriptionSessionConfig.ForRealtimeWhisper()),
-            ct: cancellationToken);
     }
 
     /// <summary>
@@ -128,7 +102,7 @@ public class RealtimeEndpoint : EndpointBase
 
 #if MODERN
     /// <summary>
-    /// Opens a streaming transcription session with <c>gpt-realtime-whisper</c>, sends PCM audio, and collects transcript events.
+    /// Opens a streaming transcription session, sends PCM audio, and collects transcript events.
     /// </summary>
     public async Task<RealtimeTranscriptionResult> TranscribeStreamingAsync(
         byte[] pcm16Audio,
@@ -139,33 +113,34 @@ public class RealtimeEndpoint : EndpointBase
         RealtimeTranscriptionResult result = new RealtimeTranscriptionResult();
         RealtimeTranscriptionStreamEventHandler effectiveHandler = handler ?? new RealtimeTranscriptionStreamEventHandler();
 
-        effectiveHandler.OnTranscriptionDelta ??= evt =>
-        {
-            result.Deltas.Add(evt.Delta ?? string.Empty);
-            return ValueTask.CompletedTask;
-        };
-        effectiveHandler.OnTranscriptionCompleted ??= evt =>
-        {
-            result.FinalTranscript = evt.Transcript;
-            result.Completed.TrySetResult(true);
-            return ValueTask.CompletedTask;
-        };
-        effectiveHandler.OnError ??= err =>
-        {
-            result.Errors.Add(err.Message ?? err.Code ?? "unknown");
-            return ValueTask.CompletedTask;
-        };
-
         RealtimeConnectOptions connectOptions = new RealtimeConnectOptions
         {
             Kind = RealtimeSessionKind.Transcription,
             CancellationToken = cancellationToken,
-            OnEvent = evt => effectiveHandler.DispatchAsync(evt).AsTask()
+            OnEventAsync = evt => result.DispatchAsync(evt, effectiveHandler),
+            OnError = error =>
+            {
+                result.Errors.Add(error.Message);
+                result.Completed.TrySetResult(false);
+            },
+            OnClose = description =>
+            {
+                if (!result.Completed.Task.IsCompleted)
+                {
+                    result.Errors.Add(description ?? "Realtime connection closed before transcription completed.");
+                    result.Completed.TrySetResult(false);
+                }
+            }
         };
 
         await using RealtimeSession session = await ConnectAsync(connectOptions).ConfigureAwait(false);
-        await session.UpdateSessionAsync(sessionConfig ?? RealtimeTranscriptionSessionConfig.ForRealtimeWhisper(), cancellationToken).ConfigureAwait(false);
-        await session.AppendInputAudioAsync(Convert.ToBase64String(pcm16Audio), cancellationToken).ConfigureAwait(false);
+        await session.UpdateSessionAsync(sessionConfig ?? RealtimeTranscriptionSessionConfig.ForLiveTranscribe(), cancellationToken).ConfigureAwait(false);
+        const int chunkSize = 24_000 * 2 / 5;
+        for (int offset = 0; offset < pcm16Audio.Length; offset += chunkSize)
+        {
+            int length = Math.Min(chunkSize, pcm16Audio.Length - offset);
+            await session.AppendInputAudioAsync(Convert.ToBase64String(pcm16Audio, offset, length), cancellationToken).ConfigureAwait(false);
+        }
         await session.CommitInputAudioAsync(cancellationToken).ConfigureAwait(false);
 
         using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -176,7 +151,7 @@ public class RealtimeEndpoint : EndpointBase
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            // timed out waiting for completed event
+            result.Errors.Add("Realtime transcription timed out before completion.");
         }
 
         result.PartialTranscript = string.Concat(result.Deltas);

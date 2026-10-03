@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using LlmTornado.Chat.Models;
 
 namespace LlmTornado.Realtime;
@@ -45,6 +46,11 @@ public class RealtimeConnectOptions
     public Action<RealtimeServerEvent>? OnEvent { get; set; }
 
     /// <summary>
+    /// Asynchronous event handler, awaited before the next server event is processed.
+    /// </summary>
+    public Func<RealtimeServerEvent, Task>? OnEventAsync { get; set; }
+
+    /// <summary>
     /// Invoked when the WebSocket opens.
     /// </summary>
     public Action? OnOpen { get; set; }
@@ -77,8 +83,8 @@ public class RealtimeConnectOptions
         return Kind switch
         {
             RealtimeSessionKind.Translation => ChatModelOpenAiRealtime.ModelRealtimeTranslate.Name,
-            RealtimeSessionKind.Transcription => ChatModelOpenAiRealtime.ModelRealtimeWhisper.Name,
-            _ => ChatModelOpenAiRealtime.ModelRealtime2.Name
+            RealtimeSessionKind.Transcription => ChatModelOpenAiRealtime.ModelLiveTranscribe.Name,
+            _ => ChatModelOpenAiRealtime.ModelRealtime21.Name
         };
     }
 
@@ -87,6 +93,11 @@ public class RealtimeConnectOptions
     /// </summary>
     public Uri BuildWebSocketUri()
     {
+        if (Kind is RealtimeSessionKind.Transcription)
+        {
+            return new Uri($"wss://{Host}/{ApiVersion}/realtime?intent=transcription");
+        }
+
         string model = Uri.EscapeDataString(ResolveModelName());
         string path = Kind switch
         {

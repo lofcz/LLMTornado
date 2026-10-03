@@ -1,4 +1,4 @@
-using LlmTornado.Audio;
+﻿using LlmTornado.Audio;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
@@ -778,8 +778,8 @@ public enum ChatRequestServiceTiers
     Fast,
     
     /// <summary>
-    /// OpenAI Ultrafast mode. Limited-preview service tier for GPT-5.6 Sol that can run
-    /// up to 14× faster than standard processing.
+    /// OpenAI Ultrafast processing for GPT-6 Astra through the Responses API.
+    /// GPT-5.6 Sol access remains in preview.
     /// </summary>
     [EnumMember(Value = "ultrafast")]
     Ultrafast

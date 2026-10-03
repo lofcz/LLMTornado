@@ -1,4 +1,4 @@
-using LlmTornado.Chat;
+﻿using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 
@@ -40,9 +40,7 @@ public class CodexModelRoutingTests
         ChatModel.OpenAi.Gpt51.V51Codex,
         ChatModel.OpenAi.Gpt51.V51CodexMini,
         ChatModel.OpenAi.Gpt51.V51CodexMax,
-        ChatModel.OpenAi.Gpt52.V52Codex,
-        ChatModel.OpenAi.Codex.MiniLatest,
-        ChatModel.OpenAi.Codex.ComputerUsePreview
+        ChatModel.OpenAi.Gpt52.V52Codex
     ];
 
     [Test]

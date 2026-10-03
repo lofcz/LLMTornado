@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using LlmTornado.Code;
@@ -80,7 +80,7 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     public readonly ChatModelOpenAiGpt56 Gpt56 = new ChatModelOpenAiGpt56();
     
     /// <summary>
-    /// GPT-6 models, including GPT-6 Astra (September 8, 2026).
+    /// GPT-6 models, including Astra, GPT-6.1 Sol, GPT-6 Sol, and Luna.
     /// </summary>
     public readonly ChatModelOpenAiGpt6 Gpt6 = new ChatModelOpenAiGpt6();
     
@@ -178,7 +178,7 @@ public class ChatModelOpenAi : BaseVendorModelProvider
         // Web-search / o-series / GPT-5 models that never accept temperature.
         // Conditionally supported models (GPT-5.1/5.2/5.4/5.5/5.6) are excluded so
         // ChatRequest can keep temperature when reasoning_effort is "none".
-        // GPT-6 Astra never accepts sampling params and is listed in SamplingParamsNeverSupported.
+        // GPT-6 Astra and GPT-6.1 Sol never accept sampling params.
         ..WebSearchCompatibleModelsAll
             .Concat(ChatModelOpenAiO3.ModelsAll)
             .Concat(ChatModelOpenAiO4.ModelsAll)
@@ -187,7 +187,7 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     ]);
 
     /// <summary>
-    /// Models that never support temperature/top_p/logprobs (older GPT-5 models).
+    /// Models that never support temperature/top_p/logprobs.
     /// </summary>
     internal static HashSet<IModel> SamplingParamsNeverSupported => LazySamplingParamsNeverSupported.Value;
     
@@ -195,11 +195,11 @@ public class ChatModelOpenAi : BaseVendorModelProvider
         ChatModelOpenAiGpt5.ModelV5, ChatModelOpenAiGpt5.ModelV5Mini, ChatModelOpenAiGpt5.ModelV5Nano, ChatModelOpenAiGpt5.ModelV5Pro, ChatModelOpenAiGpt5.ModelV5Codex,
         ChatModelOpenAiGpt52.ModelV52Codex, ChatModelOpenAiCodex.ModelGpt53Codex,
         ChatModelOpenAiGpt54.ModelV54Pro, ChatModelOpenAiGpt55.ModelV55Pro,
-        ChatModelOpenAiGpt6.ModelV6Astra
+        ChatModelOpenAiGpt6.ModelV6Astra, ChatModelOpenAiGpt6.ModelV61Sol
     ]);
     
     /// <summary>
-    /// Models that conditionally support temperature/top_p/logprobs only when reasoning effort is none (GPT-5.6, GPT-5.5, GPT-5.4, GPT-5.2, GPT-5.1).
+    /// Models that support temperature/top_p/logprobs only when reasoning effort is none.
     /// </summary>
     internal static HashSet<IModel> SamplingParamsConditionallySupported => LazySamplingParamsConditionallySupported.Value;
     
@@ -207,7 +207,8 @@ public class ChatModelOpenAi : BaseVendorModelProvider
         ..ChatModelOpenAiGpt51.ModelsAll, ..ChatModelOpenAiGpt52.ModelsAll,
         ChatModelOpenAiGpt54.ModelV54, ChatModelOpenAiGpt54.ModelV54Mini, ChatModelOpenAiGpt54.ModelV54Nano,
         ChatModelOpenAiGpt55.ModelV55,
-        ..ChatModelOpenAiGpt56.ModelsAll
+        ..ChatModelOpenAiGpt56.ModelsAll,
+        ChatModelOpenAiGpt6.ModelV6Sol, ChatModelOpenAiGpt6.ModelV6Luna
     ]);
 
     /// <summary>
@@ -251,12 +252,21 @@ public class ChatModelOpenAi : BaseVendorModelProvider
 
     /// <summary>
     /// Models that support function/custom tools only through the Responses API.
-    /// Chat Completions rejects tool calls unless reasoning effort is none; these models do not support none.
+    /// These models do not support reasoning effort none.
     /// </summary>
     internal static HashSet<IModel> ToolsRequireResponsesModelsAllSet => LazyToolsRequireResponsesModelsAllSet.Value;
 
     private static readonly Lazy<HashSet<IModel>> LazyToolsRequireResponsesModelsAllSet = new Lazy<HashSet<IModel>>(() => [
-        ChatModelOpenAiGpt6.ModelV6Astra
+        ChatModelOpenAiGpt6.ModelV6Astra, ChatModelOpenAiGpt6.ModelV61Sol
+    ]);
+
+    /// <summary>
+    /// Models that require Responses for tool calling unless reasoning effort is explicitly none.
+    /// </summary>
+    internal static HashSet<IModel> ToolsWithReasoningRequireResponsesModelsAllSet => LazyToolsWithReasoningRequireResponsesModelsAllSet.Value;
+
+    private static readonly Lazy<HashSet<IModel>> LazyToolsWithReasoningRequireResponsesModelsAllSet = new Lazy<HashSet<IModel>>(() => [
+        ChatModelOpenAiGpt6.ModelV6Sol, ChatModelOpenAiGpt6.ModelV6Luna
     ]);
 
     /// <summary>
@@ -288,15 +298,16 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     /// Determines whether sampling parameters (temperature, top_p, logprobs) should be cleared for GPT-5.x / GPT-6 models.
     /// Parameter compatibility:
     /// - Older GPT-5 models (gpt-5, gpt-5-mini, gpt-5-nano) never support these parameters
-    /// - GPT-6 Astra never supports these parameters and does not expose reasoning effort none
+    /// - GPT-6 Astra and GPT-6.1 Sol never support these parameters or reasoning effort none
+    /// - GPT-6 Sol and Luna support these parameters only with explicit reasoning effort none
     /// - GPT-5.6, GPT-5.5, and GPT-5.4 only support these when reasoning effort is none, while GPT-5.5/5.4 pro variants never support them
     /// - GPT-5.3-Codex and GPT-5.2-Codex never support these because they only expose reasoning modes low, medium, high, and xhigh
     /// - GPT-5.2 and GPT-5.1 only support these when reasoning effort is none
     /// </summary>
     /// <param name="model">The model being used.</param>
-    /// <param name="hasNonNoneReasoningEffort">True if reasoning effort is set to something other than none.</param>
+    /// <param name="hasNonNoneReasoningEffort">True for an effort other than none; null when no effort is specified.</param>
     /// <returns>True if sampling parameters should be cleared.</returns>
-    internal static bool ShouldClearSamplingParams(IModel? model, bool hasNonNoneReasoningEffort)
+    internal static bool ShouldClearSamplingParams(IModel? model, bool? hasNonNoneReasoningEffort)
     {
         if (model is null)
         {
@@ -308,7 +319,9 @@ public class ChatModelOpenAi : BaseVendorModelProvider
             return true;
         }
         
-        if (SamplingParamsConditionallySupported.Contains(model) && hasNonNoneReasoningEffort)
+        if (SamplingParamsConditionallySupported.Contains(model) &&
+            (hasNonNoneReasoningEffort == true ||
+             (hasNonNoneReasoningEffort is null && ChatModelOpenAiGpt6.ModelsAll.Contains(model))))
         {
             return true;
         }

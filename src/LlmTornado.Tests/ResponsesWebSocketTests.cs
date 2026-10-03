@@ -1,4 +1,4 @@
-using LlmTornado.Chat;
+﻿using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Demo;
@@ -81,7 +81,8 @@ public class ResponsesWebSocketTests
     {
         ResponseRequest request = new ResponseRequest
         {
-            Model = ChatModel.OpenAi.Gpt41.V41Mini,
+            Model = ChatModel.OpenAi.Gpt6.V6Astra,
+            ServiceTier = ChatRequestServiceTiers.Ultrafast,
             InputString = "hello",
             Stream = true,
             Background = true,
@@ -100,6 +101,7 @@ public class ResponsesWebSocketTests
         Assert.That(jo["stream_options"], Is.Null);
         Assert.That(jo["generate"]!.Value<bool>(), Is.False);
         Assert.That(jo["input"]!.ToString(), Is.EqualTo("hello"));
+        Assert.That(jo["service_tier"]?.ToString(), Is.EqualTo("ultrafast"));
     }
 
     [Test]

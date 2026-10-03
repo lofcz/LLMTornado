@@ -1,8 +1,10 @@
-using LlmTornado.Chat.Models;
+﻿using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Demo;
 using LlmTornado.Realtime;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Tests;
 
@@ -17,18 +19,20 @@ public class RealtimeTranscriptionTests
     }
 
     [Test]
-    public async Task CreateTranscriptionSession_ReturnsClientSecret()
+    public void TranscriptionDefaults_UseCurrentGaSchema()
     {
-        TornadoApi api = Program.Connect();
-        RealtimeTranscriptionSessionConfig config = RealtimeTranscriptionSessionConfig.ForRealtimeWhisper("en");
-
-        HttpCallResult<RealtimeSessionCreateResponse> result =
-            await api.Realtime.CreateTranscriptionSession(config);
-
-        Assert.That(result.Ok, Is.True, result.Response);
-        Assert.That(result.Data, Is.Not.Null);
-        Assert.That(result.Data!.ClientSecret?.Value, Is.Not.Null.And.Not.Empty);
-        Assert.That(result.Data.ClientSecret!.ExpiresAt, Is.GreaterThan(0));
+        RealtimeTranscriptionSessionConfig config = RealtimeTranscriptionSessionConfig.ForLiveTranscribe("de");
+        config.Audio!.Input!.Transcription!.Keywords = ["LLMTornado"];
+        JObject update = JObject.Parse(JsonConvert.SerializeObject(RealtimeClientEvents.SessionUpdate(config), EndpointBase.NullSettings));
+        Assert.That(update["type"]?.ToString(), Is.EqualTo("session.update"));
+        Assert.That(update.SelectToken("session.type")?.ToString(), Is.EqualTo("transcription"));
+        Assert.That(update.SelectToken("session.audio.input.transcription.model")?.ToString(), Is.EqualTo("gpt-live-transcribe"));
+        Assert.That(update.SelectToken("session.audio.input.transcription.languages")!.Values<string>(), Is.EqualTo(new[] { "de" }));
+        Assert.That(update.SelectToken("session.audio.input.transcription.language"), Is.Null);
+        Assert.That(update.SelectToken("session.audio.input.transcription.keywords")!.Values<string>(), Is.EqualTo(new[] { "LLMTornado" }));
+        Assert.That(update.SelectToken("session.audio.input.turn_detection")?.Type, Is.EqualTo(JTokenType.Null));
+        JObject unspecified = JObject.Parse(JsonConvert.SerializeObject(new RealtimeAudioInputConfig(), EndpointBase.NullSettings));
+        Assert.That(unspecified["turn_detection"], Is.Null);
     }
 
     [Test]
@@ -78,5 +82,6 @@ public class RealtimeTranscriptionTests
         ChatModel model = ChatModel.OpenAi.Realtime.RealtimeWhisper;
         Assert.That(model.Name, Is.EqualTo("gpt-realtime-whisper"));
         Assert.That(model.Provider, Is.EqualTo(LLmProviders.OpenAi));
+        Assert.That(model.ContextTokens, Is.EqualTo(16_000));
     }
 }
