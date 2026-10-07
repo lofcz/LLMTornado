@@ -1,4 +1,4 @@
-using LlmTornado.Code.Vendor;
+﻿using LlmTornado.Code.Vendor;
 
 namespace LlmTornado.Code;
 
@@ -58,7 +58,7 @@ internal static class EndpointProviderConverter
             },
             LLmProviders.OpenRouter => new OpenAiEndpointProvider(LLmProviders.OpenRouter)
             {
-                UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://openrouter.ai/api/{0}/{1}", api.ResolveApiVersion(), OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.OpenRouter))}{url}"
+                UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://openrouter.ai/api/{0}/{1}", endpoint is CapabilityEndpoints.Decision ? "alpha" : api.ResolveApiVersion(), OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.OpenRouter))}{url}"
             },
             LLmProviders.MoonshotAi => new OpenAiEndpointProvider(LLmProviders.MoonshotAi)
             {

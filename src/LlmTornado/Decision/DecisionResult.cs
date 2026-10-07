@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -10,6 +10,14 @@ namespace LlmTornado.Decision;
 /// </summary>
 public class DecisionResult : ApiResultBase
 {
+    /// <summary>Generation identifier returned by OpenRouter.</summary>
+    [JsonProperty("id")]
+    public string? Id { get; set; }
+
+    /// <summary>Name of the upstream provider that served the decision.</summary>
+    [JsonProperty("provider")]
+    public string? UpstreamProvider { get; set; }
+
     /// <summary>
     /// One answer per question, keyed by the same ids used in <see cref="DecisionRequest.Questions"/>.
     /// </summary>
@@ -52,6 +60,10 @@ public class DecisionResult : ApiResultBase
 /// </summary>
 public class DecisionUsage
 {
+    /// <summary>Request cost in USD, when returned by OpenRouter.</summary>
+    [JsonProperty("cost")]
+    public decimal? Cost { get; set; }
+
     /// <summary>
     /// Input tokens consumed (state plus all questions).
     /// </summary>
@@ -126,10 +138,10 @@ public class DecisionScoreAnswer : DecisionAnswer
     public double Score { get; set; }
     
     /// <summary>
-    /// Each level index (as a string key) mapped back to its description.
+    /// Each level index (as a string key) mapped back to its string, object or array description.
     /// </summary>
     [JsonProperty("legend")]
-    public Dictionary<string, string> Legend { get; set; } = [];
+    public Dictionary<string, object> Legend { get; set; } = [];
     
     /// <summary>
     /// Each level index (as a string key) mapped to its probability. The values sum to 1.

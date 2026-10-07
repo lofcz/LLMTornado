@@ -1,5 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using LlmTornado.Decision.Models.TypeSafe;
+using LlmTornado.Decision.Models.OpenRouter;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
@@ -14,6 +15,9 @@ public class DecisionModel : ModelBase
     /// Models from TypeSafe.
     /// </summary>
     public static readonly DecisionModelTypeSafe TypeSafe = new();
+
+    /// <summary>Decision models provided by OpenRouter.</summary>
+    public static readonly DecisionModelOpenRouter OpenRouter = new();
     
     /// <summary>
     /// All known models keyed by name.
@@ -29,7 +33,8 @@ public class DecisionModel : ModelBase
     {
         AllModels =
         [
-            ..TypeSafe.AllModels
+            ..TypeSafe.AllModels,
+            ..OpenRouter.AllModels
         ];
         
         AllModels.ForEach(x =>

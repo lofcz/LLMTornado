@@ -1,4 +1,4 @@
-using LlmTornado.Decision;
+﻿using LlmTornado.Decision;
 using LlmTornado.Decision.Models;
 using LlmTornado.Code;
 using LlmTornado.Models;
@@ -61,7 +61,7 @@ public class TypeSafeDecisionTests
         Assert.That(DecisionModel.TypeSafe.Jev.V1_13.Name, Is.EqualTo("jev-1.13.0"));
         Assert.That(DecisionModel.TypeSafe.OwnsModel("jev-latest"), Is.True);
         Assert.That(DecisionModel.TypeSafe.Jev.Latest.Provider, Is.EqualTo(LLmProviders.TypeSafe));
-        Assert.That(DecisionModel.AllModels, Has.Count.EqualTo(3));
+        Assert.That(DecisionModel.TypeSafe.AllModels, Has.Count.EqualTo(3));
     }
 
     [Test]

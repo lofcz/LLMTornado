@@ -1,7 +1,11 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using LlmTornado.Decision.Models;
 using LlmTornado.Code;
+using System;
+using System.Globalization;
+using System.IO;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Decision;
 
@@ -53,6 +57,10 @@ public class DecisionRequest : ISerializableRequest
     /// </summary>
     [JsonProperty("questions")]
     public Dictionary<string, DecisionQuestion> Questions { get; set; } = [];
+
+    /// <summary>Provider-specific decision request settings.</summary>
+    [JsonIgnore]
+    public DecisionRequestVendorExtensions? VendorExtensions { get; set; }
 
     /// <summary>
     /// Adds a yes/no question.
@@ -128,12 +136,40 @@ public class DecisionRequest : ISerializableRequest
     /// </summary>
     internal TornadoRequestContent SerializeInternal(IEndpointProvider provider, RequestSerializeOptions? options)
     {
+        if (provider.Provider is LLmProviders.OpenRouter)
+        {
+            ValidateOpenRouterQuestions();
+        }
         // Null option descriptions in choice criteria are meaningful for the API, so nulls are kept here;
         // optional properties opt out individually via NullValueHandling.Ignore.
-        string body = JsonConvert.SerializeObject(this, options?.Pretty ?? false ? Formatting.Indented : Formatting.None, SerializerSettings);
+        JsonSerializer serializer = JsonSerializer.CreateDefault(SerializerSettings);
+        JObject payload = JObject.FromObject(this, serializer);
+        if (provider.Provider is LLmProviders.OpenRouter && VendorExtensions?.OpenRouter is { } extensions)
+        {
+            JObject extra = JObject.FromObject(extensions, serializer);
+            foreach (JProperty property in extra.Properties())
+            {
+                payload[property.Name] = property.Value;
+            }
+        }
+        serializer.Formatting = options?.Pretty ?? false ? Formatting.Indented : Formatting.None;
+        using StringWriter writer = new StringWriter(CultureInfo.InvariantCulture);
+        serializer.Serialize(writer, payload);
+        string body = writer.ToString();
         return new TornadoRequestContent(body, Model, UrlOverride ?? EndpointBase.BuildRequestUrl(null, provider, CapabilityEndpoints.Decision, Model), provider, CapabilityEndpoints.Decision);
     }
     
+    private void ValidateOpenRouterQuestions()
+    {
+        foreach (KeyValuePair<string, DecisionQuestion> question in Questions)
+        {
+            if (question.Value is DecisionNoul { Criteria: { } criteria } && (criteria.True is null || criteria.False is null))
+            {
+                throw new ArgumentException($"OpenRouter noul question '{question.Key}' requires both 'true' and 'false' criteria when criteria are provided.", nameof(Questions));
+            }
+        }
+    }
+
     private static readonly JsonSerializerSettings SerializerSettings = new JsonSerializerSettings
     {
         NullValueHandling = NullValueHandling.Include

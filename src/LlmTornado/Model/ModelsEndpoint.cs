@@ -80,6 +80,7 @@ public class ModelsEndpoint : EndpointBase
 	{
 		Dictionary<string, object>? queryPars = provider switch
 		{
+			LLmProviders.OpenRouter => new Dictionary<string, object> { { "output_modalities", "all" } },
 			LLmProviders.Google => new Dictionary<string, object> { { "pageSize", 1000 } },
 			LLmProviders.Cohere => new Dictionary<string, object> { { "page_size", 1000 } },
 			LLmProviders.Anthropic => new Dictionary<string, object> { { "limit", 1000 } },

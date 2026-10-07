@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using LlmTornado.Code;
@@ -29,6 +29,7 @@ public class ModelsEndpointTests
     private int _port;
     private volatile int _status = 200;
     private volatile string _body = ModelsJson;
+    private string? _query;
 
     [SetUp]
     public void SetUp()
@@ -36,6 +37,7 @@ public class ModelsEndpointTests
         _port = GetFreePort();
         _status = 200;
         _body = ModelsJson;
+        _query = null;
         _listener = new HttpListener();
         _listener.Prefixes.Add($"http://127.0.0.1:{_port}/");
         _listener.Start();
@@ -67,6 +69,26 @@ public class ModelsEndpointTests
         Assert.That(result.Exception, Is.Null);
         Assert.That(result.Code, Is.EqualTo(HttpStatusCode.OK));
         Assert.That(result.Data!.Select(x => x.Id), Is.EqualTo(new[] { "model-a", "model-b" }));
+    }
+
+    [Test]
+    public async Task GetModels_OpenRouter_IncludesAllModalitiesAndPreservesMultipleValues()
+    {
+        Respond(200, """
+            { "data": [
+              { "id": "hybrid", "architecture": { "input_modalities": ["text", "image"], "output_modalities": ["text", "decisions"] }, "supported_parameters": ["state", "questions"] },
+              { "id": "decision-only", "architecture": { "output_modalities": ["decisions"] } }
+            ] }
+            """);
+        List<RetrievedModel>? models = await Api(_port, LLmProviders.OpenRouter).Models.GetModels(LLmProviders.OpenRouter);
+
+        Assert.That(_query, Is.EqualTo("?output_modalities=all"));
+        Assert.That(models, Has.Count.EqualTo(2));
+        Assert.That(models![0].Architecture!.InputModalities, Is.EqualTo(new[] { "text", "image" }));
+        Assert.That(models[0].Architecture!.OutputModalities, Is.EqualTo(new[] { "text", "decisions" }));
+        Assert.That(models[0].SupportedParameters, Is.EqualTo(new[] { "state", "questions" }));
+        Assert.That(models.Where(x => x.Architecture?.OutputModalities?.Contains("decisions") == true)
+            .Select(x => x.Id), Is.EqualTo(new[] { "hybrid", "decision-only" }));
     }
 
     [Test]
@@ -133,9 +155,9 @@ public class ModelsEndpointTests
         Assert.That(result.Exception, Is.Not.Null);
     }
 
-    private static TornadoApi Api(int port)
+    private static TornadoApi Api(int port, LLmProviders provider = LLmProviders.OpenAi)
     {
-        return new TornadoApi(LLmProviders.OpenAi, "test-key")
+        return new TornadoApi(provider, "test-key")
         {
             ApiUrlFormat = $"http://127.0.0.1:{port}/{{0}}/{{1}}"
         };
@@ -163,6 +185,7 @@ public class ModelsEndpointTests
                 return;
             }
 
+            _query = context.Request.Url!.Query;
             byte[] body = Encoding.UTF8.GetBytes(_body);
             context.Response.StatusCode = _status;
             context.Response.ContentType = "application/json";
