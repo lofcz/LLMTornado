@@ -28,6 +28,7 @@ LLM Tornado is a .NET provider-agnostic SDK that empowers developers to build, o
 - **Agents Orchestration**: [Coordinate specialist agents](https://llmtornado.ai/agents/getting-started) that can autonomously perform complex tasks with three core concepts: `Orchestrator` (graph), `Runner` (node), and `Advancer` (edge). Comes with [handoffs](https://llmtornado.ai/agents/agent-orchestration/basics), [parallel execution](https://llmtornado.ai/agents/chat-runtime), [Mermaid](https://mermaid.js.org) export, and [builder pattern](https://llmtornado.ai/agents/agent-orchestration/orchestration#using-the-builder) to keep it simple.
 - **Rapid Development**: Write pipelines once, execute with any Provider by changing the model's name. Connect your editor to [Context7](https://context7.com/lofcz/llmtornado) or [FSKB](https://github.com/lofcz/LlmTornado/tree/master/src/LlmTornado.FsKb/LlmTornado.FsKb) to accelerate coding with instant access to vectorized documentation.
 - **Fully Multimodal**: Text, images, videos, documents, URLs, and audio inputs/outputs are supported.
+- **Typed Decisions**: Evaluate choice, score, and noul questions through TypeSafe or OpenRouter, including Jev 1.13 and Luna Decisions.
 - **Cutting Edge Protocols:**
   - [**MCP**](https://llmtornado.ai/mcp/mcp): Connect agents to data sources, tools, and workflows via Model Context Protocol with `LlmTornado.Mcp`.
   - [**A2A**](https://llmtornado.ai/a2a/getting-started): Enable seamless collaboration between AI agents across different platforms with `LlmTornado.A2A`.
@@ -41,6 +42,7 @@ LLM Tornado is a .NET provider-agnostic SDK that empowers developers to build, o
 </div>
 
 ## 🔥 News 2026
+- 26/10 - Version 3.8.72 adds OpenRouter alpha Decisions support for Jev and Luna Decisions. See the [changelog](CHANGELOG.md).
 - 26/02 - [MiniMax](https://www.minimax.io) connector is implemented. Compaction endpoint is added, and can be used along the compaction built-in to LLM Tornado. Started work on ACP.
 - 26/01 - [Ivy Framework](https://ivy.app) uses `LlmTornado.Agents` to build their [AI Components](https://github.com/Ivy-Interactive/Ivy-Examples/pull/362). `/ocr` endpoint is implemented for Mistral. `/files` endpoint support is extended to all supported providers.
 
@@ -132,6 +134,17 @@ foreach (ChatModel model in models)
 ### OpenAI API keys and Codex subscriptions
 
 OpenAI API keys continue to support normal text and image models, while ChatGPT subscription access for Codex is explained in the [Codex guide](src/LlmTornado/Codex/README.md).
+
+### Typed Decisions with TypeSafe and OpenRouter
+
+`api.Decision` evaluates a state against typed choice, score, and noul questions.
+Use `DecisionModel.TypeSafe.Jev.Latest` for the direct TypeSafe API.
+For OpenRouter, select `DecisionModel.OpenRouter.All.Jev113` or `DecisionModel.OpenRouter.All.Gpt6LunaDecisions`.
+OpenRouter Decisions use `/api/alpha/decisions`. Account privacy settings, including ZDR, apply to these requests.
+
+OpenRouter model queries include all output modalities. `Architecture.OutputModalities` can contain multiple values, such as `text` and `decisions`.
+The explicit live tests use `OPENROUTER_API_KEY` and cover both Jev and Luna by default.
+See the [Decision guide](src/LlmTornado.Docs/website/docs/1.%20LlmTornado/Decision/1.%20basics.md) for examples, routing settings, and test commands.
 
 ## ❄️ Vendor Extensions
 

@@ -1,5 +1,7 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
+using System;
+using System.Net;
 using System.Threading.Tasks;
 using LlmTornado.Decision.Models;
 using LlmTornado.Code;
@@ -9,7 +11,7 @@ namespace LlmTornado.Decision;
 
 /// <summary>
 /// The decision endpoint evaluates a state (text or structured data) against a set of typed questions
-/// (choice, score, noul) and returns structured answers with calibrated probabilities. Backed by TypeSafe System One models (Jev).
+/// (choice, score, noul) and returns structured answers with calibrated probabilities through TypeSafe or OpenRouter.
 /// </summary>
 public class DecisionEndpoint : EndpointBase
 {
@@ -67,7 +69,23 @@ public class DecisionEndpoint : EndpointBase
     public async Task<HttpCallResult<DecisionResult>> CreateDecisionSafe(DecisionRequest request, CancellationToken token = default)
     {
         IEndpointProvider provider = Api.GetProvider(request.Model);
-        TornadoRequestContent requestBody = request.Serialize(provider);
-        return await HttpPost<DecisionResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.Model, request, token).ConfigureAwait(false);
+        TornadoRequestContent requestBody;
+        try
+        {
+            requestBody = request.Serialize(provider);
+        }
+        catch (ArgumentException ex)
+        {
+            return new HttpCallResult<DecisionResult>(HttpStatusCode.BadRequest, null, null, false, new RestDataOrException<HttpResponseData>(ex))
+            {
+                Exception = ex
+            };
+        }
+        HttpCallResult<DecisionResult> result = await HttpPost<DecisionResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.Model, request, token).ConfigureAwait(false);
+        if (result.Data is not null)
+        {
+            result.Data.Provider = provider;
+        }
+        return result;
     }
 }

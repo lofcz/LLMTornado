@@ -13,7 +13,7 @@
         <PackageTags>sdk;agent;workflow;orchestration;multi-agent;agents;rag;mcp;a2a;agent-framework;agentic-framework;agentic-workflow;agentic-rag;agentic-ai;agent-orchestration;agents-sdk;agent2agent</PackageTags>
         <Title>LlmTornado</Title>
         <PackageId>LlmTornado</PackageId>
-        <Version>3.8.71</Version>
+        <Version>3.8.72</Version>
         <AssemblyVersion>3.0.5</AssemblyVersion>
         <FileVersion>3.0.5</FileVersion>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>

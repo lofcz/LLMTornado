@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -108,6 +108,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             CapabilityEndpoints.Ocr when provider is LLmProviders.Mistral => "ocr",
             CapabilityEndpoints.Ocr when provider is LLmProviders.Zai => "layout_parsing",
             CapabilityEndpoints.Decision when provider is LLmProviders.TypeSafe => "systemone",
+            CapabilityEndpoints.Decision when provider is LLmProviders.OpenRouter => "decisions",
             CapabilityEndpoints.Realtime => "realtime",
             CapabilityEndpoints.Live => "live/sessions",
             _ => throw new Exception($"{provider} doesn't support endpoint {endpoint}")

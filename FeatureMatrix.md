@@ -63,11 +63,12 @@ Conversations | Assistants | Threads | Messages | Runs | Run steps | Vector stor
 |-----------|-----------|
 | ✅ | ✅ |
 
-## TypeSafe Specific
+## Decisions (System One)
 
-| Decision (System One) |
-|-----------|
-| ✅ |
+| Provider | Decision |
+|-----------|-----------|
+| TypeSafe | ✅ |
+| OpenRouter (alpha) | ✅ |
 
 ## MiniMax Specific
 
