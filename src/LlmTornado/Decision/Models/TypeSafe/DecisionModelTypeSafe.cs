@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -39,10 +39,7 @@ public class DecisionModelTypeSafe : BaseVendorModelProvider
     /// <summary>
     /// <inheritdoc cref="AllModels"/>
     /// </summary>
-    public static readonly List<IModel> ModelsAll =
-    [
-        ..DecisionModelTypeSafeJev.ModelsAll
-    ];
+    public static readonly List<IModel> ModelsAll = DecisionModel.AllModels.Where(model => model.Provider is LLmProviders.TypeSafe).ToList();
     
     static DecisionModelTypeSafe()
     {

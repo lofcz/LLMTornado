@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -17,32 +17,32 @@ public class DecisionModelTypeSafeJev : BaseVendorModelProvider
     /// <summary>
     /// Alias of the most recent stable, official Jev release. Moves when a new release ships.
     /// </summary>
-    public static readonly DecisionModel ModelLatest = new DecisionModel("jev-latest", LLmProviders.TypeSafe);
+    public static readonly DecisionModel ModelLatest = DecisionModel.GetRegisteredModel("jev-latest");
 
     /// <summary>
     /// <inheritdoc cref="ModelLatest"/>
     /// </summary>
-    public readonly DecisionModel Latest = ModelLatest;
+    public readonly DecisionModel Latest = DecisionModel.GetRegisteredModel("jev-latest");
     
     /// <summary>
     /// Alias of the most recent Jev release, whether or not it is an official one. Moves ahead of <see cref="Latest"/> when a preview build is available.
     /// </summary>
-    public static readonly DecisionModel ModelPreview = new DecisionModel("jev-preview", LLmProviders.TypeSafe);
+    public static readonly DecisionModel ModelPreview = DecisionModel.GetRegisteredModel("jev-preview");
     
     /// <summary>
     /// <inheritdoc cref="ModelPreview"/>
     /// </summary>
-    public readonly DecisionModel Preview = ModelPreview;
+    public readonly DecisionModel Preview = DecisionModel.GetRegisteredModel("jev-preview");
     
     /// <summary>
     /// Jev 1.13, pinned version. Prefer pinning when confidence thresholds were tuned against a specific version.
     /// </summary>
-    public static readonly DecisionModel ModelV1_13 = new DecisionModel("jev-1.13.0", LLmProviders.TypeSafe);
+    public static readonly DecisionModel ModelV1_13 = DecisionModel.GetRegisteredModel("jev-1.13.0");
     
     /// <summary>
     /// <inheritdoc cref="ModelV1_13"/>
     /// </summary>
-    public readonly DecisionModel V1_13 = ModelV1_13;
+    public readonly DecisionModel V1_13 = DecisionModel.GetRegisteredModel("jev-1.13.0");
     
     /// <summary>
     /// All known Jev models.

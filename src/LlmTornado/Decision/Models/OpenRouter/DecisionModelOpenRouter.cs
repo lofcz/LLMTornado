@@ -15,7 +15,7 @@ public class DecisionModelOpenRouter : BaseVendorModelProvider
     public readonly DecisionModelOpenRouterAll All = new DecisionModelOpenRouterAll();
 
     /// <summary>All known OpenRouter models for the alpha Decisions endpoint.</summary>
-    public static readonly List<IModel> ModelsAll = [..DecisionModelOpenRouterAll.ModelsAll];
+    public static readonly List<IModel> ModelsAll = DecisionModel.AllModels.Where(model => model.Provider is LLmProviders.OpenRouter).ToList();
 
     /// <summary>Names of the models owned by this provider.</summary>
     public static readonly HashSet<string> AllModelsMap = new HashSet<string>(ModelsAll.Select(model => model.Name));
