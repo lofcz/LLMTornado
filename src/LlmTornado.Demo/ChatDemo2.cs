@@ -820,6 +820,23 @@ public partial class ChatDemo : DemoBase
     }
 
     [TornadoTest]
+    public static async Task CheaperInferenceChat()
+    {
+        // Cheaper Inference is an OpenAI-compatible gateway. The model name is the
+        // bare id the gateway exposes (see https://cheaperinference.com/markets).
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = new ChatModel("gpt-5.4-mini", LLmProviders.CheaperInference)
+        });
+
+        chat.AppendUserInput("2+2=?");
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("Cheaper Inference:");
+        Console.WriteLine(str);
+    }
+
+    [TornadoTest]
     public static async Task AnthropicSearchResultsStream()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

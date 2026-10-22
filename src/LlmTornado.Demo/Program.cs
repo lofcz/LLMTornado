@@ -43,6 +43,7 @@ public class Program
         public string MiniMax { get; set; }
         public string LiteLlm { get; set; }
         public string TypeSafe { get; set; }
+        public string CheaperInference { get; set; }
     }
 
     public static TornadoApi ConnectMulti(bool httpStrict = true)
@@ -68,7 +69,8 @@ public class Program
             new ProviderAuthentication(LLmProviders.Upstage, ApiKeys.Upstage),
             new ProviderAuthentication(LLmProviders.MiniMax, ApiKeys.MiniMax),
             new ProviderAuthentication(LLmProviders.LiteLlm, ApiKeys.LiteLlm),
-            new ProviderAuthentication(LLmProviders.TypeSafe, ApiKeys.TypeSafe)
+            new ProviderAuthentication(LLmProviders.TypeSafe, ApiKeys.TypeSafe),
+            new ProviderAuthentication(LLmProviders.CheaperInference, ApiKeys.CheaperInference)
         ])
         {
             HttpStrict = httpStrict

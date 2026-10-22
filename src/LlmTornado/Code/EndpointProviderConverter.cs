@@ -76,6 +76,10 @@ internal static class EndpointProviderConverter
             {
                 UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://router.requesty.ai/{0}/{1}", api.ResolveApiVersion(), OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Requesty))}{url}"
             },
+            LLmProviders.CheaperInference => new OpenAiEndpointProvider(LLmProviders.CheaperInference)
+            {
+                UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://api.cheaperinference.com/{0}/{1}", api.ResolveApiVersion(), OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.CheaperInference))}{url}"
+            },
             LLmProviders.Upstage => new OpenAiEndpointProvider(LLmProviders.Upstage)
             {
                 UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://api.upstage.ai/v1/{0}", OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Upstage))}{url}"

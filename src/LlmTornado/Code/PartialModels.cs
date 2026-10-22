@@ -1819,6 +1819,10 @@ public enum LLmProviders
     /// </summary>
     TypeSafe,
     /// <summary>
+    /// Cheaper Inference (OpenAI-compatible LLM gateway).
+    /// </summary>
+    CheaperInference,
+    /// <summary>
     /// Internal value.
     /// </summary>
     Length

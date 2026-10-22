@@ -810,6 +810,10 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 		{
 			// LiteLLM AI gateway (OpenAI-compatible proxy for 100+ providers).
 			LLmProviders.LiteLlm, (x, y, z, a) => PreparePayload(x, x, y, z, GetSerializer(EndpointBase.NullSettings, a))
+		},
+		{
+			// Cheaper Inference (OpenAI-compatible LLM gateway).
+			LLmProviders.CheaperInference, (x, y, z, a) => PreparePayload(x, x, y, z, GetSerializer(EndpointBase.NullSettings, a))
 		}
 	};
 
@@ -1129,7 +1133,8 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
             LLmProviders.LiteLlm,
             LLmProviders.Alibaba,
             LLmProviders.MoonshotAi,
-            LLmProviders.MiniMax
+            LLmProviders.MiniMax,
+            LLmProviders.CheaperInference
         ];
         
         public override void WriteJson(JsonWriter writer, IList<ChatMessage>? value, JsonSerializer serializer)
