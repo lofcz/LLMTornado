@@ -454,7 +454,7 @@ public class QdrantVectorDatabase : IVectorDatabase
                             condition = CreateMatchCondition(kvp.Key, op.Value);
                             break;
                         case "$ne":
-                            // For not-equal, we'll skip it for now as it requires must_not logic
+                            condition = Negate(CreateMatchCondition(kvp.Key, op.Value));
                             break;
                         case "$gt":
                             condition = Range(kvp.Key, new QdrantRange
@@ -492,6 +492,17 @@ public class QdrantVectorDatabase : IVectorDatabase
                                 };
                             }
                             break;
+                        case "$nin":
+                            if (op.Value is object[] { Length: > 0 } excluded)
+                            {
+                                condition = excluded[0] switch
+                                {
+                                    string => Negate(Match(kvp.Key, excluded.Select(v => v.ToString() ?? string.Empty).ToList())),
+                                    int or long => Negate(Match(kvp.Key, excluded.Select(Convert.ToInt64).ToList())),
+                                    _ => condition
+                                };
+                            }
+                            break;
                     }
 
                     if (condition != null)
@@ -503,6 +514,16 @@ public class QdrantVectorDatabase : IVectorDatabase
         }
 
         return conditions;
+    }
+
+    /// <summary>
+    /// Wraps a condition so it must not hold. Nested, so it also works inside should (OR) clauses.
+    /// </summary>
+    private static Condition Negate(Condition condition)
+    {
+        Filter filter = new Filter();
+        filter.MustNot.Add(condition);
+        return Conditions.Filter(filter);
     }
 
     /// <summary>
