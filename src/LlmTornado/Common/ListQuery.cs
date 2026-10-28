@@ -139,9 +139,16 @@ public sealed class ListQuery
                     parameters["limit"] = query.Limit.Value.Clamp(1, 1_000); // https://docs.anthropic.com/en/api/files-list#parameter-limit
                 }
             
-                if (query.PageToken is not null)
+                string? afterId = !string.IsNullOrEmpty(query.After) ? query.After : query.PageToken;
+
+                if (!string.IsNullOrEmpty(afterId))
                 {
-                    parameters["after_id"] = query.PageToken;
+                    parameters["after_id"] = afterId;
+                }
+
+                if (!string.IsNullOrEmpty(query.Before))
+                {
+                    parameters["before_id"] = query.Before;
                 }
 
                 return parameters;
