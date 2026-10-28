@@ -49,20 +49,31 @@ internal static class GptImageModelHelper
 	}
 
 	/// <summary>
-	/// Applies gpt-image-2 rules: input_fidelity must be omitted (high fidelity is automatic).
+	/// Applies gpt-image edit rules: response_format must be omitted (the API always returns base64),
+	/// and for gpt-image-2 input_fidelity must be omitted too (high fidelity is automatic).
 	/// Transparent backgrounds are supported as of August 20, 2026.
 	/// </summary>
 	public static ImageEditRequest SanitizeEditRequest(ImageEditRequest request)
 	{
-		if (!IsGptImage2Model(request.Model) || request.InputFidelity is null)
+		bool dropResponseFormat = IsGptImageModel(request.Model) && request.ResponseFormat is not null;
+		bool dropInputFidelity = IsGptImage2Model(request.Model) && request.InputFidelity is not null;
+
+		if (!dropResponseFormat && !dropInputFidelity)
 		{
 			return request;
 		}
 
-		ImageEditRequest clone = new ImageEditRequest(request)
+		ImageEditRequest clone = new ImageEditRequest(request);
+
+		if (dropResponseFormat)
 		{
-			InputFidelity = null
-		};
+			clone.ResponseFormat = null;
+		}
+
+		if (dropInputFidelity)
+		{
+			clone.InputFidelity = null;
+		}
 
 		return clone;
 	}

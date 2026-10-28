@@ -252,7 +252,7 @@ public class ImageEditRequest
 	{
         { LLmProviders.Google, (x, y) => JsonConvert.SerializeObject(new Vendors.Google.VendorGoogleGeminiImageRequest(x, y), EndpointBase.NullSettings) },
 		{ LLmProviders.XAi, (x, y) => JsonConvert.SerializeObject(new VendorXAiImageEditRequest(x, y), EndpointBase.NullSettings) },
-		{ LLmProviders.OpenAi, (x, y) => JsonConvert.SerializeObject(new VendorOpenAiImageEditJsonRequest(x), EndpointBase.NullSettings) }
+		{ LLmProviders.OpenAi, (x, y) => JsonConvert.SerializeObject(new VendorOpenAiImageEditJsonRequest(GptImageModelHelper.SanitizeEditRequest(x)), EndpointBase.NullSettings) }
 	}.ToFrozenDictionary();
 }
 
