@@ -18,68 +18,74 @@ public class VideoModelGoogleVeo : BaseVendorModelProvider
     /// <summary>
     /// Veo 3.1 Preview model.
     /// </summary>
+    [Obsolete("Shut down October 22, 2026. Use VideoModelGoogleOmni.ModelOmni11Flash instead.")]
     public static readonly VideoModel ModelV31 = new VideoModel("veo-3.1-generate-preview", "google", LLmProviders.Google);
     
     /// <summary>
     /// <inheritdoc cref="ModelV31"/>
     /// </summary>
+    [Obsolete("Shut down October 22, 2026. Use Omni11Flash instead.")]
     public readonly VideoModel V31 = ModelV31;
     
     /// <summary>
     /// Veo 3.1 Fast Preview model.
     /// </summary>
+    [Obsolete("Shut down October 22, 2026. Use VideoModelGoogleOmni.ModelOmni11Flash instead.")]
     public static readonly VideoModel ModelV31Fast = new VideoModel("veo-3.1-fast-generate-preview", "google", LLmProviders.Google);
     
     /// <summary>
     /// <inheritdoc cref="ModelV31Fast"/>
     /// </summary>
+    [Obsolete("Shut down October 22, 2026. Use Omni11Flash instead.")]
     public readonly VideoModel V31Fast = ModelV31Fast;
     
     /// <summary>
     /// Veo 3.1 Lite Preview model. Supports text-to-video and image-to-video at 720p/1080p.
     /// Does not support video extension, reference images, or 4k output.
     /// </summary>
+    [Obsolete("Shut down October 22, 2026. Use VideoModelGoogleOmni.ModelOmni11Flash instead.")]
     public static readonly VideoModel ModelV31Lite = new VideoModel("veo-3.1-lite-generate-preview", "google", LLmProviders.Google);
     
     /// <summary>
     /// <inheritdoc cref="ModelV31Lite"/>
     /// </summary>
+    [Obsolete("Shut down October 22, 2026. Use Omni11Flash instead.")]
     public readonly VideoModel V31Lite = ModelV31Lite;
     
     /// <summary>
     /// Veo 3.0 model.
     /// </summary>
-    [Obsolete("Shut down June 30, 2026. Use ModelV31 or ModelV31Fast instead.")]
+    [Obsolete("Shut down June 30, 2026. Use VideoModelGoogleOmni.ModelOmni11Flash instead.")]
     public static readonly VideoModel ModelV3 = new VideoModel("veo-3.0-generate-001", "google", LLmProviders.Google);
     
     /// <summary>
     /// <inheritdoc cref="ModelV3"/>
     /// </summary>
-    [Obsolete("Shut down June 30, 2026. Use V31 or V31Fast instead.")]
+    [Obsolete("Shut down June 30, 2026. Use Omni11Flash instead.")]
     public readonly VideoModel V3 = ModelV3;
     
     /// <summary>
     /// Veo 3.0 Fast model.
     /// </summary>
-    [Obsolete("Shut down June 30, 2026. Use ModelV31Fast instead.")]
+    [Obsolete("Shut down June 30, 2026. Use VideoModelGoogleOmni.ModelOmni11Flash instead.")]
     public static readonly VideoModel ModelV3Fast = new VideoModel("veo-3.0-fast-generate-001", "google", LLmProviders.Google);
     
     /// <summary>
     /// <inheritdoc cref="ModelV3Fast"/>
     /// </summary>
-    [Obsolete("Shut down June 30, 2026. Use V31Fast instead.")]
+    [Obsolete("Shut down June 30, 2026. Use Omni11Flash instead.")]
     public readonly VideoModel V3Fast = ModelV3Fast;
     
     /// <summary>
     /// Veo 2.0 model.
     /// </summary>
-    [Obsolete("Shut down June 30, 2026. Use ModelV31 instead.")]
+    [Obsolete("Shut down June 30, 2026. Use VideoModelGoogleOmni.ModelOmni11Flash instead.")]
     public static readonly VideoModel ModelV2 = new VideoModel("veo-2.0-generate-001", "google", LLmProviders.Google);
     
     /// <summary>
     /// <inheritdoc cref="ModelV2"/>
     /// </summary>
-    [Obsolete("Shut down June 30, 2026. Use V31 instead.")]
+    [Obsolete("Shut down June 30, 2026. Use Omni11Flash instead.")]
     public readonly VideoModel V2 = ModelV2;
     
     /// <summary>

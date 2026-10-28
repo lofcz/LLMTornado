@@ -32,7 +32,9 @@ internal static class VendorGoogleVideoHandler
             NullValueHandling = NullValueHandling.Ignore
         });
         
+#pragma warning disable CS0618 // Type or member is obsolete
         string modelName = request.Model?.Name ?? VideoModel.Google.Veo.V31.Name;
+#pragma warning restore CS0618 // Type or member is obsolete
         string urlFragment = $"/{modelName}:predictLongRunning";
         string url = $"{provider.ApiUrl(CapabilityEndpoints.Videos, null)}{urlFragment}";
         
