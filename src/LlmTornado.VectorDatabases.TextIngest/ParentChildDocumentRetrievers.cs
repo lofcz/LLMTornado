@@ -66,7 +66,10 @@ public class ParentChildDocumentRetriever : IDocumentRetriever
     {
         List<VectorDocument> vectorDocuments = _vectorStore.QueryByEmbedding(queryEmbedding, where, topK).ToList();
 
-        return _docStore.GetDocuments(vectorDocuments.Select(d => d.Id).ToArray());
+        return _docStore.GetDocuments(vectorDocuments
+            .Where(d => d.Metadata != null && d.Metadata.ContainsKey("parent_id") && d.Metadata["parent_id"] != null)
+            .Select(d => d.Metadata!["parent_id"].ToString()!)
+            .ToArray());
     }
 
     public async Task<IEnumerable<Document>> SearchAsync(float[] queryEmbedding, TornadoWhereOperator? where = null, int topK = 5, bool includeSource = false)
