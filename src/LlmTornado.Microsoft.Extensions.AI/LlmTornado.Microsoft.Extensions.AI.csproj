@@ -15,7 +15,7 @@
     <PackageTags>OpenAI;Anthropic;Google;Microsoft.Extensions.AI;AI;LLM;Chat;Embeddings;ImageGeneration</PackageTags>
     <Title>LlmTornado.Microsoft.Extensions.AI</Title>
     <PackageId>LlmTornado.Microsoft.Extensions.AI</PackageId>
-    <Version>1.1.70</Version>
+    <Version>1.1.71</Version>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <TargetFrameworks>net10.0;net8.0;netstandard2.0</TargetFrameworks>
     <LangVersion>preview</LangVersion>

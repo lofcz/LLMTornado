@@ -10,7 +10,7 @@
     <PackageProjectUrl>https://llmtornado.ai</PackageProjectUrl>
     <RepositoryUrl>https://github.com/lofcz/LlmTornado</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
   </PropertyGroup>
   
   <ItemGroup>
