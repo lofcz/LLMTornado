@@ -253,9 +253,15 @@ public class QdrantVectorDatabase : IVectorDatabase
         await client.DeleteAsync(collectionName, pointIds);
     }
 
-    public Task DeleteAllDocumentsAsync()
+    /// <summary>
+    /// Deletes all documents of the collection asynchronously. The collection itself and its configuration are kept.
+    /// </summary>
+    public async Task DeleteAllDocumentsAsync()
     {
-        throw new NotImplementedException();
+        ThrowIfCollectionNotInitialized();
+
+        // an empty filter matches every point
+        await client.DeleteAsync(collectionName, new Filter());
     }
 
     /// <summary>
