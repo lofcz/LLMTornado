@@ -16,7 +16,25 @@ public static partial class A2ATornadoExtension
 
         if (file.Uri is not null)
         {
-            return ChatMessagePart.Create(file.Uri, ChatMessageTypes.Image);
+            string? mimeType = file.MimeType;
+
+            if (mimeType?.Contains("audio") == true)
+            {
+                return ChatMessagePart.Create(file.Uri, ChatMessageTypes.Audio);
+            }
+
+            if (mimeType?.Contains("video") == true)
+            {
+                return ChatMessagePart.Create(file.Uri, ChatMessageTypes.Video);
+            }
+
+            // A URL without a declared type keeps being read as an image, as before.
+            if (string.IsNullOrEmpty(mimeType) || mimeType.Contains("image"))
+            {
+                return ChatMessagePart.Create(file.Uri, ChatMessageTypes.Image);
+            }
+
+            return new ChatMessagePart(new ChatMessagePartFileLinkData(file.Uri.AbsoluteUri, mimeType));
         }
         
         if (file.Bytes is not null)
