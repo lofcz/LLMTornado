@@ -26,11 +26,56 @@ public class ImageEditResponseFormatTests
             UrlResolver = (_, _, _) => $"http://127.0.0.1:{server.Port}/v1/{{0}}{{1}}"
         });
 
-        await api.ImageEdit.EditImage(new ImageEditRequest(new TornadoInputFile("iVBORw0KGgo=", "image/png"), "Add a hat", responseFormat: format, model: ImageModel.OpenAi.Gpt.V1Mini));
+        await api.ImageEdit.EditImage(new ImageEditRequest(new TornadoInputFile("iVBORw0KGgo=", "image/png"), "Add a hat", responseFormat: format, model: new ImageModel("dall-e-2", LLmProviders.OpenAi)));
 
         Match match = Regex.Match(server.RequestBodies.Single(), "name=\"?response_format\"?\\r?\\n\\r?\\n(\\w+)");
         Assert.That(match.Success, Is.True);
         Assert.That(match.Groups[1].Value, Is.EqualTo(expected));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task Edit_OmitsResponseFormatAndInputFidelityForGptImage2(bool useJsonBody)
+    {
+        using FakeServer server = new FakeServer(Reply);
+        TornadoApi api = CreateApi(server);
+
+        await api.ImageEdit.EditImage(new ImageEditRequest(new TornadoInputFile("iVBORw0KGgo=", "image/png"), "Add a hat", responseFormat: TornadoImageResponseFormats.Base64, model: ImageModel.OpenAi.Gpt.V2)
+        {
+            InputFidelity = TornadoImageInputFidelity.High,
+            UseJsonBody = useJsonBody,
+            ImageReferences = useJsonBody ? [new ImageEditReference { Type = ImageEditReferenceType.ImageUrl, ImageUrl = "https://example.com/a.png" }] : null
+        });
+
+        string body = server.RequestBodies.Single();
+        Assert.That(body, Does.Contain("gpt-image-2"));
+        Assert.That(body, Does.Not.Contain("response_format"));
+        Assert.That(body, Does.Not.Contain("input_fidelity"));
+    }
+
+    [Test]
+    public async Task MultipartEdit_OmitsResponseFormatButKeepsInputFidelityForGptImage1()
+    {
+        using FakeServer server = new FakeServer(Reply);
+        TornadoApi api = CreateApi(server);
+
+        await api.ImageEdit.EditImage(new ImageEditRequest(new TornadoInputFile("iVBORw0KGgo=", "image/png"), "Add a hat", responseFormat: TornadoImageResponseFormats.Base64, model: ImageModel.OpenAi.Gpt.V1)
+        {
+            InputFidelity = TornadoImageInputFidelity.High
+        });
+
+        string body = server.RequestBodies.Single();
+        Assert.That(body, Does.Not.Contain("response_format"));
+        Assert.That(body, Does.Contain("input_fidelity"));
+    }
+
+    private static TornadoApi CreateApi(FakeServer server)
+    {
+        return new TornadoApi(new OpenAiEndpointProvider(LLmProviders.OpenAi)
+        {
+            Auth = new ProviderAuthentication(LLmProviders.OpenAi, "test-key"),
+            UrlResolver = (_, _, _) => $"http://127.0.0.1:{server.Port}/v1/{{0}}{{1}}"
+        });
     }
 
     private sealed class FakeServer : IDisposable

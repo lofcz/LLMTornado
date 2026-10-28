@@ -38,6 +38,11 @@ public class ImageEditEndpoint : EndpointBase
     public async Task<ImageGenerationResult?> EditImage(ImageEditRequest request)
     {
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ImageModelOpenAiGpt.Default);
+
+        if (provider.Provider == LLmProviders.OpenAi)
+        {
+            request = GptImageModelHelper.SanitizeEditRequest(request);
+        }
         
         // xAI uses JSON body instead of multipart form
         if (provider.Provider is LLmProviders.XAi or LLmProviders.Google)
