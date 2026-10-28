@@ -20,13 +20,30 @@ public static class McpExtensions
 #endif
     }
     
+    /// <summary>
+    /// The MCP connector takes the bare OAuth token and adds the "Bearer" scheme itself,
+    /// so a full "Bearer xxx" header value has to be reduced to "xxx".
+    /// </summary>
+    private static string? ToAuthorizationToken(string? headerValue)
+    {
+        if (string.IsNullOrWhiteSpace(headerValue))
+        {
+            return null;
+        }
+
+        string value = headerValue.Trim();
+        const string scheme = "Bearer ";
+
+        return value.StartsWith(scheme, StringComparison.OrdinalIgnoreCase) ? value.Substring(scheme.Length).TrimStart() : value;
+    }
+
     public static AnthropicMcpServer ToAnthropicMcpServerAsync(this MCPServer client)
     {
         AnthropicMcpServer server = new AnthropicMcpServer
         {
             Name = client.ServerLabel,
             Url = client.ServerUrl,
-            AuthorizationToken = client.AdditionalConnectionHeaders?.FirstOrDefault(key => key.Key.ToLower().Contains("auth")).Value ?? string.Empty,
+            AuthorizationToken = ToAuthorizationToken(client.AdditionalConnectionHeaders?.FirstOrDefault(key => key.Key.ToLower().Contains("auth")).Value),
             Configuration = new AnthropicMcpConfiguration
             {
                 Enabled = true,
