@@ -29,37 +29,83 @@ namespace LlmTornado.VectorDatabases
 
             var chunks = new List<string>();
             var sb = new StringBuilder();
+            // Characters at the start of sb that are only overlap carried over from the previous chunk
+            var carried = 0;
 
-            foreach (var line in rawLines)
+            void Emit()
             {
-                sb.Append(line);
-                sb.Append('\n');
+                chunks.Add(sb.ToString());
 
-                if (sb.Length >= chunk_size)
+                if (chunk_overlap > 0)
                 {
-                    // Emit current chunk
-                    chunks.Add(sb.ToString());
-
-                    if (chunk_overlap > 0)
-                    {
-                        // Keep only the overlap tail for the next chunk
-                        var current = sb;
-                        var keepCount = chunk_overlap;
-                        // Safe because chunk_overlap < chunk_size and we only reach here when sb.Length >= chunk_size
-                        var start = current.Length - keepCount;
-                        var tail = current.ToString(start, keepCount);
-                        sb.Clear();
-                        sb.Append(tail);
-                    }
-                    else
-                    {
-                        sb.Clear();
-                    }
+                    // Keep only the overlap tail for the next chunk
+                    var current = sb;
+                    var keepCount = Math.Min(chunk_overlap, current.Length);
+                    var start = current.Length - keepCount;
+                    var tail = current.ToString(start, keepCount);
+                    sb.Clear();
+                    sb.Append(tail);
+                    carried = keepCount;
+                }
+                else
+                {
+                    sb.Clear();
+                    carried = 0;
                 }
             }
 
-            //Add any remaining non-whitespace content
-            if (sb.Length > 0 && sb.ToString().Trim().Length > 0)
+            void Append(string text, char separator)
+            {
+                sb.Append(text);
+                sb.Append(separator);
+                carried = 0;
+
+                if (sb.Length >= chunk_size)
+                {
+                    Emit();
+                }
+            }
+
+            foreach (var line in rawLines)
+            {
+                // A line longer than chunk_size (e.g. PDF page text, which is joined with spaces and has no newlines)
+                // is cut at the last space that still fits into the current chunk
+                var pos = 0;
+                while (line.Length > chunk_size && line.Length - pos > chunk_size - sb.Length - 1)
+                {
+                    var room = chunk_size - sb.Length - 1;
+                    if (room <= 0 && sb.Length > carried)
+                    {
+                        // The chunk is full: close it before adding more
+                        Emit();
+                        continue;
+                    }
+
+                    var width = Math.Max(room, 1);
+                    var end = Math.Min(pos + width, line.Length - 1);
+                    var space = line.LastIndexOf(' ', end, end - pos + 1);
+                    if (space > pos)
+                    {
+                        Append(line.Substring(pos, space - pos), ' ');
+                        pos = space + 1;
+                    }
+                    else if (sb.Length > carried)
+                    {
+                        // No space fits next to the text already in the chunk: close it instead of cutting a word
+                        Emit();
+                    }
+                    else
+                    {
+                        Append(line.Substring(pos, width), ' ');
+                        pos += width;
+                    }
+                }
+
+                Append(line.Substring(pos), '\n');
+            }
+
+            //Add any remaining non-whitespace content (the overlap tail of the last chunk alone is not new content)
+            if (sb.Length > carried && sb.ToString().Trim().Length > 0)
             {
                 chunks.Add(sb.ToString());
             }
