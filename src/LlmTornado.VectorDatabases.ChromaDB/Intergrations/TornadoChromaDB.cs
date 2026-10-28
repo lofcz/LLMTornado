@@ -172,11 +172,23 @@ namespace LlmTornado.VectorDatabases.Intergrations
         public async Task UpdateDocumentsAsync(VectorDocument[] documents)
         {
             ThrowIfCollectionNotInitialized();
-            await CollectionClient.UpdateAsync(
-                documents.Select(d => d.Id).ToList(),
-                metadatas: documents.Select(d => ToChromaMetadata(d.Metadata)).ToList(),
-                documents: documents.Select(d => d.Content ?? "").ToList()
-                );
+
+            // Chroma keeps the stored embedding unless one is sent, so documents with a new embedding go in their own batch
+            foreach (bool hasEmbedding in new[] { true, false })
+            {
+                VectorDocument[] batch = documents.Where(d => (d.Embedding is { Length: > 0 }) == hasEmbedding).ToArray();
+                if (batch.Length == 0)
+                {
+                    continue;
+                }
+
+                await CollectionClient.UpdateAsync(
+                    batch.Select(d => d.Id).ToList(),
+                    embeddings: hasEmbedding ? batch.Select(d => new ReadOnlyMemory<float>(d.Embedding!)).ToList() : null,
+                    metadatas: batch.Select(d => ToChromaMetadata(d.Metadata)).ToList(),
+                    documents: batch.Select(d => d.Content ?? "").ToList()
+                    );
+            }
         }
 
         public void UpsertDocuments(VectorDocument[] documents)
