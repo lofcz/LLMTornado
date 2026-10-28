@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using LlmTornado.Audio;
 using LlmTornado.Audio.Models;
+using LlmTornado.Audio.Models.OpenAi;
 using LlmTornado.Code;
 using LlmTornado.Code.Vendor;
 
@@ -71,5 +72,30 @@ public class TranscriptionTemperatureTests
         string body = await PostTranscription(null);
 
         Assert.That(Field(body, "temperature"), Is.EqualTo("0"));
+    }
+
+    [TestCase("gpt-4o-transcribe", "json")]
+    [TestCase("gpt-4o-mini-transcribe", "json")]
+    [TestCase("whisper-1", "verbose_json")]
+    public void ResponseFormat_Unset_DefaultsToWhatTheModelAccepts(string model, string expected)
+    {
+        TranscriptionRequest request = new TranscriptionRequest
+        {
+            Model = new AudioModel(model, LLmProviders.OpenAi)
+        };
+
+        Assert.That(request.GetResponseFormat, Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void ResponseFormat_SetByTheCaller_IsKept()
+    {
+        TranscriptionRequest request = new TranscriptionRequest
+        {
+            Model = AudioModelOpenAiGpt4.Model4OTranscribe,
+            ResponseFormat = AudioTranscriptionResponseFormats.Text
+        };
+
+        Assert.That(request.GetResponseFormat, Is.EqualTo("text"));
     }
 }
