@@ -48,7 +48,9 @@ public class VideoGenerationRequest
     public VideoGenerationRequest(string prompt, VideoModel? model = null, VideoDuration? duration = null, VideoAspectRatio? aspectRatio = null, VideoResolution? resolution = null, VideoPersonGeneration? personGeneration = null)
     {
         Prompt = prompt;
+#pragma warning disable CS0618 // Type or member is obsolete
         Model = model ?? VideoModel.Google.Veo.V31;
+#pragma warning restore CS0618 // Type or member is obsolete
         Duration = duration;
         AspectRatio = aspectRatio;
         Resolution = resolution;
