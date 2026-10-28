@@ -63,6 +63,20 @@ public class VectorLogicalFilterTests
         Assert.That(sql, Does.StartWith("(((").And.Contain(" OR ").And.Contain(") AND ("));
     }
 
+    [TestCase(SimilarityMetric.Cosine)]
+    [TestCase(SimilarityMetric.Euclidean)]
+    [TestCase(SimilarityMetric.DotProduct)]
+    [TestCase(SimilarityMetric.Manhattan)]
+    public void PgVector_Query_OrdersByDistanceAscendingSoTheClosestRowsAreReturned(SimilarityMetric metric)
+    {
+        PgVectorCollectionClient client = new PgVectorCollectionClient(new PgVectorCollection("docs", 3) { Metric = metric }, null!);
+        MethodInfo method = typeof(PgVectorCollectionClient).GetMethod("BuildQuerySql", BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+        string sql = (string)method.Invoke(client, ["public", "docs_vectors", null])!;
+
+        Assert.That(sql, Does.Contain("ORDER BY distance asc").And.Contain("LIMIT @limit"));
+    }
+
     private static bool FaissMatches(Dictionary<string, object> metadata, TornadoWhereOperator where)
     {
         // MatchesFilter does not touch the index, so skip the native FAISS setup.

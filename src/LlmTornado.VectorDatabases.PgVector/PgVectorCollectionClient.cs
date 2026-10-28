@@ -76,14 +76,8 @@ public class PgVectorCollectionClient
         };
     }
     
-    public async Task<List<PgVectorEntry>> QueryAsync(float[] queryEmbedding, int topK = 10, Dictionary<string, object>? whereMetadata = null)
+    private string BuildQuerySql(string schema, string tableName, Dictionary<string, object>? whereMetadata)
     {
-        await using NpgsqlConnection connection = _client.CreateConnection();
-        await connection.OpenAsync();
-
-        string schema = _client.GetSchema();
-        string tableName = GetTableName();
-        
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.AppendLine($"""
                              SELECT id, document, metadata, embedding, 
@@ -96,12 +90,21 @@ public class PgVectorCollectionClient
             queryBuilder.AppendLine($" WHERE {BuildMetadataFilter(whereMetadata)}");
         }
 
+        // the operators return a distance, so the closest rows come first when ordering ascending
         queryBuilder.AppendLine($"""
-                                 ORDER BY distance desc
+                                 ORDER BY distance asc
                                  LIMIT @limit
                                  """);
 
-        string sql = queryBuilder.ToString();
+        return queryBuilder.ToString();
+    }
+
+    public async Task<List<PgVectorEntry>> QueryAsync(float[] queryEmbedding, int topK = 10, Dictionary<string, object>? whereMetadata = null)
+    {
+        await using NpgsqlConnection connection = _client.CreateConnection();
+        await connection.OpenAsync();
+
+        string sql = BuildQuerySql(_client.GetSchema(), GetTableName(), whereMetadata);
         await using NpgsqlCommand cmd = new NpgsqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("embedding", $"[{string.Join(",", queryEmbedding)}]");
         cmd.Parameters.AddWithValue("limit", topK);
