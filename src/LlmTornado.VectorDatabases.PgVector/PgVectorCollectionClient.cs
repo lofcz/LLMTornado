@@ -346,7 +346,24 @@ public class PgVectorCollectionClient
             string key = kvp.Key;
             object value = kvp.Value;
 
-            if (value is Dictionary<string, object> operatorDict)
+            if (key is "$and" or "$or")
+            {
+                if (value is IEnumerable<object> clauses)
+                {
+                    List<string> clauseConditions = clauses
+                        .OfType<Dictionary<string, object>>()
+                        .Select(BuildMetadataFilter)
+                        .Where(clause => clause.Length > 0)
+                        .Select(clause => $"({clause})")
+                        .ToList();
+
+                    if (clauseConditions.Count > 0)
+                    {
+                        conditions.Add($"({string.Join("$and" == key ? " AND " : " OR ", clauseConditions)})");
+                    }
+                }
+            }
+            else if (value is Dictionary<string, object> operatorDict)
             {
                 foreach (KeyValuePair<string, object> op in operatorDict)
                 {

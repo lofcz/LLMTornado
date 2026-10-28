@@ -439,6 +439,26 @@ public class FaissCollectionClient : IDisposable
             var key = filterKvp.Key;
             var filterValue = filterKvp.Value;
 
+            if (key is "$and" or "$or")
+            {
+                if (filterValue is not IEnumerable<object> clauses)
+                {
+                    return false;
+                }
+
+                var clauseMatches = clauses
+                    .OfType<Dictionary<string, object>>()
+                    .Select(clause => MatchesFilter(metadata, clause))
+                    .ToList();
+
+                if (key == "$and" ? !clauseMatches.All(matched => matched) : !clauseMatches.Any(matched => matched))
+                {
+                    return false;
+                }
+
+                continue;
+            }
+
             if (!metadata.TryGetValue(key, out var metadataValue))
             {
                 return false;
