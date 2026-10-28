@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using LlmTornado.Audio.Google;
 using LlmTornado.Audio.Vendors.Google;
 using LlmTornado.Audio.Models;
+using LlmTornado.Audio.Models.OpenAi;
 using LlmTornado.Audio.Vendors.Zai;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
@@ -70,7 +71,18 @@ public class TranscriptionRequest
     ///     The format of the transcript output, in one of these options: json, text, srt, verbose_json, or vtt.
     /// </summary>
     [JsonProperty("response_format")]
-    public AudioTranscriptionResponseFormats ResponseFormat { get; set; } = AudioTranscriptionResponseFormats.VerboseJson;
+    public AudioTranscriptionResponseFormats ResponseFormat
+    {
+        get => responseFormat ?? DefaultResponseFormat;
+        set => responseFormat = value;
+    }
+
+    private AudioTranscriptionResponseFormats? responseFormat;
+
+    // OpenAI models outside the Whisper family (gpt-4o-transcribe, gpt-4o-mini-transcribe, ...) only accept "json".
+    private AudioTranscriptionResponseFormats DefaultResponseFormat => Model?.Provider is LLmProviders.OpenAi && !AudioModelOpenAi.VerboseJsonCompatibleModels.Contains(Model)
+        ? AudioTranscriptionResponseFormats.Json
+        : AudioTranscriptionResponseFormats.VerboseJson;
 
     internal string GetResponseFormat => ResponseFormat switch
     {
