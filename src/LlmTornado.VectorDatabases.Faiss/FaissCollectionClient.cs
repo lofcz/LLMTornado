@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace LlmTornado.VectorDatabases.Faiss;
 
@@ -41,23 +42,15 @@ public class FaissCollectionClient : IDisposable
                 {
                     // Load metadata
                     string json = File.ReadAllText(metadataFile);
-                    var data = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
-                    
+                    var data = ReadMetadata(json);
+
                     if (data != null)
                     {
-                        if (data.TryGetValue("nextId", out var nextIdObj))
+                        _nextId = data.NextId;
+
+                        if (data.Entries != null)
                         {
-                            _nextId = Convert.ToInt64(nextIdObj);
-                        }
-                        
-                        if (data.TryGetValue("entries", out var entriesObj))
-                        {
-                            var entriesJson = JsonSerializer.Serialize(entriesObj);
-                            var entries = JsonSerializer.Deserialize<Dictionary<long, FaissEntry>>(entriesJson);
-                            if (entries != null)
-                            {
-                                _metadata = entries;
-                            }
+                            _metadata = data.Entries;
                         }
                     }
 
@@ -75,6 +68,24 @@ public class FaissCollectionClient : IDisposable
                 InitializeNewIndex();
             }
         }
+    }
+
+    /// <summary>
+    /// Reads the metadata file written by <see cref="SaveIndex"/>. Deserialized into a typed shape: an object-typed
+    /// dictionary yields <see cref="JsonElement"/> values, which Convert.ToInt64 cannot convert.
+    /// </summary>
+    private static FaissMetadataFile? ReadMetadata(string json)
+    {
+        return JsonSerializer.Deserialize<FaissMetadataFile>(json);
+    }
+
+    private sealed class FaissMetadataFile
+    {
+        [JsonPropertyName("nextId")]
+        public long NextId { get; set; }
+
+        [JsonPropertyName("entries")]
+        public Dictionary<long, FaissEntry>? Entries { get; set; }
     }
 
     private void InitializeNewIndex()
