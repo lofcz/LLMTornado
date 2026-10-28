@@ -31,7 +31,13 @@ public class LocalDocumentStore : IDocumentStore
 
     public void DeleteDocument(string id)
     {
-        throw new NotImplementedException();
+        var filePath = Path.Combine(_collectionFilePath, $"{id}.json");
+        if (!File.Exists(filePath))
+        {
+            throw new KeyNotFoundException($"Document with id {id} not found.");
+        }
+
+        File.Delete(filePath);
     }
 
     public IEnumerable<Document> GetAllDocuments()
