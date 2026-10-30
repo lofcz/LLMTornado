@@ -23,21 +23,25 @@ public class ChatModelMistralFree : IVendorModelClassProvider
     /// <summary>
     /// Voxtral Mini (3B).
     /// </summary>
+    [Obsolete("Retired May 31, 2026 on the Mistral API. Use AudioModel.Mistral.Free.VoxtralMiniTranscribe2 instead.")]
     public static readonly ChatModel ModelVoxtralMini2507 = new ChatModel("voxtral-mini-2507", LLmProviders.Mistral, 32_000, [ "voxtral-mini-latest" ]);
     
     /// <summary>
     /// <inheritdoc cref="ModelVoxtralMini2507"/>
     /// </summary>
+    [Obsolete("Retired May 31, 2026 on the Mistral API. Use AudioModel.Mistral.Free.VoxtralMiniTranscribe2 instead.")]
     public readonly ChatModel VoxtralMini2507 = ModelVoxtralMini2507;
     
     /// <summary>
     /// Devstral Small 1.1 (24B)
     /// </summary>
+    [Obsolete("Retired May 31, 2026 on the Mistral API. Use ChatModel.Mistral.Free.MistralSmall4 instead.")]
     public static readonly ChatModel ModelDevstralSmall2507 = new ChatModel("devstral-small-2507", LLmProviders.Mistral, 128_000);
     
     /// <summary>
     /// <inheritdoc cref="ModelDevstralSmall2507"/>
     /// </summary>
+    [Obsolete("Retired May 31, 2026 on the Mistral API. Use ChatModel.Mistral.Free.MistralSmall4 instead.")]
     public readonly ChatModel DevstralSmall2507 = ModelDevstralSmall2507;
     
     /// <summary>
@@ -79,11 +83,13 @@ public class ChatModelMistralFree : IVendorModelClassProvider
     /// <summary>
     /// Devstral Small 2 (24B) - Next-generation coding model for software development. Apache 2.0 license.
     /// </summary>
+    [Obsolete("Retired March 31, 2026 on the Mistral API. Use ChatModel.Mistral.Premier.MistralMedium35 instead.")]
     public static readonly ChatModel ModelDevstralSmall2512 = new ChatModel("devstral-small-2512", LLmProviders.Mistral, 128_000, [ "labs-devstral-small-2512" ]);
     
     /// <summary>
     /// <inheritdoc cref="ModelDevstralSmall2512"/>
     /// </summary>
+    [Obsolete("Retired March 31, 2026 on the Mistral API. Use ChatModel.Mistral.Premier.MistralMedium35 instead.")]
     public readonly ChatModel DevstralSmall2512 = ModelDevstralSmall2512;
     
     /// <summary>
@@ -129,51 +135,61 @@ public class ChatModelMistralFree : IVendorModelClassProvider
     /// <summary>
     /// Mistral Small 3.2
     /// </summary>
+    [Obsolete("Retired July 31, 2026 on the Mistral API. Use ChatModel.Mistral.Free.MistralSmall4 instead.")]
     public static readonly ChatModel ModelMistralSmall2506 = new ChatModel("mistral-small-2506", LLmProviders.Mistral, 128_000);
     
     /// <summary>
     /// <inheritdoc cref="ModelMistralSmall2506"/>
     /// </summary>
+    [Obsolete("Retired July 31, 2026 on the Mistral API. Use ChatModel.Mistral.Free.MistralSmall4 instead.")]
     public readonly ChatModel MistralSmall2506 = ModelMistralSmall2506;
     
     /// <summary>
     /// Our small reasoning model released September 2025 with vision support.
     /// </summary>
+    [Obsolete("Retired July 31, 2026 on the Mistral API. Use ChatModel.Mistral.Free.MistralSmall4 instead.")]
     public static readonly ChatModel ModelMagistralSmall2509 = new ChatModel("magistral-small-2509", LLmProviders.Mistral, 128_000);
     
     /// <summary>
     /// <inheritdoc cref="ModelMagistralSmall2509"/>
     /// </summary>
+    [Obsolete("Retired July 31, 2026 on the Mistral API. Use ChatModel.Mistral.Free.MistralSmall4 instead.")]
     public readonly ChatModel MagistralSmall2509 = ModelMagistralSmall2509;
     
     /// <summary>
     /// Building upon Mistral Small 3.1 (2503), with added reasoning capabilities, undergoing SFT from Magistral Medium traces and RL on top, it's a small, efficient reasoning model with 24B parameters.
     /// </summary>
+    [Obsolete("Retired November 30, 2025 on the Mistral API. Use ChatModel.Mistral.Free.MistralSmall4 instead.")]
     public static readonly ChatModel ModelMagistralSmall2507 = new ChatModel("magistral-small-2507", LLmProviders.Mistral, 40_000);
     
     /// <summary>
     /// <inheritdoc cref="ModelMagistralSmall2507"/>
     /// </summary>
+    [Obsolete("Retired November 30, 2025 on the Mistral API. Use ChatModel.Mistral.Free.MistralSmall4 instead.")]
     public readonly ChatModel MagistralSmall2507 = ModelMagistralSmall2507;
     
     /// <summary>
     /// Building upon Mistral Small 3.1 (2503), with added reasoning capabilities, undergoing SFT from Magistral Medium traces and RL on top, it's a small, efficient reasoning model with 24B parameters.
     /// </summary>
+    [Obsolete("Retired November 30, 2025 on the Mistral API. Use ChatModel.Mistral.Free.MistralSmall4 instead.")]
     public static readonly ChatModel ModelMagistralSmall2506 = new ChatModel("magistral-small-2506", LLmProviders.Mistral, 40_000);
     
     /// <summary>
     /// <inheritdoc cref="ModelMagistralSmall2506"/>
     /// </summary>
+    [Obsolete("Retired November 30, 2025 on the Mistral API. Use ChatModel.Mistral.Free.MistralSmall4 instead.")]
     public readonly ChatModel MagistralSmall2506 = ModelMagistralSmall2506;
     
     /// <summary>
     /// A 24B text model, open source model that excels at using tools to explore codebases, editing multiple files and power software engineering agents.
     /// </summary>
+    [Obsolete("Retired November 30, 2025 on the Mistral API. Use ChatModel.Mistral.Premier.MistralMedium35 instead.")]
     public static readonly ChatModel ModelDevstralSmall2505 = new ChatModel("devstral-small-2505", LLmProviders.Mistral, 128_000);
     
     /// <summary>
     /// <inheritdoc cref="ModelDevstralSmall2505"/>
     /// </summary>
+    [Obsolete("Retired November 30, 2025 on the Mistral API. Use ChatModel.Mistral.Premier.MistralMedium35 instead.")]
     public readonly ChatModel DevstralSmall = ModelDevstralSmall2505;
     
     /// <summary>
@@ -190,31 +206,37 @@ public class ChatModelMistralFree : IVendorModelClassProvider
     /// <summary>
     /// A new leader in the small models category with image understanding capabilities, with the lastest version v3.1 released March 2025.
     /// </summary>
+    [Obsolete("Retired November 30, 2025 on the Mistral API. Use ChatModel.Mistral.Free.MistralSmall4 instead.")]
     public static readonly ChatModel ModelMistralSmall2503 = new ChatModel("mistral-small-2503", LLmProviders.Mistral, 128_000);
     
     /// <summary>
     /// <inheritdoc cref="ModelMistralSmall2503"/>
     /// </summary>
+    [Obsolete("Retired November 30, 2025 on the Mistral API. Use ChatModel.Mistral.Free.MistralSmall4 instead.")]
     public readonly ChatModel MistralSmall2503 = ModelMistralSmall2503;
     
     /// <summary>
     /// A 12B model with image understanding capabilities in addition to text. 
     /// </summary>
+    [Obsolete("Retired December 31, 2025 on the Mistral API. Use ChatModel.Mistral.Free.Ministral14b2512 instead.")]
     public static readonly ChatModel ModelPixtral = new ChatModel("pixtral-12b-2409", LLmProviders.Mistral, 128_000);
     
     /// <summary>
     /// <inheritdoc cref="ModelPixtral"/>
     /// </summary>
+    [Obsolete("Retired December 31, 2025 on the Mistral API. Use ChatModel.Mistral.Free.Ministral14b2512 instead.")]
     public readonly ChatModel Pixtral = ModelPixtral;
     
     /// <summary>
     /// Mistral Small Creative - Labs model released December 2025 for creative writing tasks.
     /// </summary>
+    [Obsolete("Retired April 30, 2026 on the Mistral API. Use ChatModel.Mistral.Free.Ministral8b2512 instead.")]
     public static readonly ChatModel ModelMistralSmallCreative = new ChatModel("labs-mistral-small-creative", LLmProviders.Mistral, 32_000);
     
     /// <summary>
     /// <inheritdoc cref="ModelMistralSmallCreative"/>
     /// </summary>
+    [Obsolete("Retired April 30, 2026 on the Mistral API. Use ChatModel.Mistral.Free.Ministral8b2512 instead.")]
     public readonly ChatModel MistralSmallCreative = ModelMistralSmallCreative;
     
     /// <summary>
