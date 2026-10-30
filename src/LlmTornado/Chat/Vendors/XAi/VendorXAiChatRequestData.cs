@@ -54,8 +54,8 @@ internal class VendorXAiChatRequest
             {
                 ExtendedRequest.SearchParameters = new VendorXAiChatRequestDataSearchParameters
                 {
-                    FromDate = extensions.SearchParameters.FromDate?.ToString("YYYY-MM-DD"),
-                    ToDate = extensions.SearchParameters.ToDate?.ToString("YYYY-MM-DD"),
+                    FromDate = extensions.SearchParameters.FromDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    ToDate = extensions.SearchParameters.ToDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                     Mode = extensions.SearchParameters.Mode switch
                     {
                         ChatRequestVendorXAiExtensionsSearchParametersModes.Auto => "auto",
