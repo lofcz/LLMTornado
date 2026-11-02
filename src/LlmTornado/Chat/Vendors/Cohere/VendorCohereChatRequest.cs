@@ -90,7 +90,7 @@ internal class VendorCohereChatRequest
         P = request.TopP;
         FrequencyPenalty = request.FrequencyPenalty;
         PresencePenalty = request.PresencePenalty;
-        StopSequences = request.StopSequence?.Split().ToList();
+        StopSequences = request.MultipleStopSequences?.ToList();
         Seed = request.Seed;
         Logprobs = request.Logprobs;
         

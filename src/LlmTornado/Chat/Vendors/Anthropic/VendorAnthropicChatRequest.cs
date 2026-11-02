@@ -728,7 +728,7 @@ internal class VendorAnthropicChatRequest
     {
         Model = request.Model?.Name ?? ChatModel.Anthropic.Claude5.Sonnet.Name;
         MaxTokens = request.MaxTokens ?? 1024;
-        StopSequences = request.StopSequence?.Split(',').ToList();
+        StopSequences = request.MultipleStopSequences?.ToList();
         Stream = request.Stream;
         Temperature = ChatModelAnthropicHelper.RejectsNonDefaultSamplingParams(Model) ? null : request.Temperature;
         TopP = ChatModelAnthropicHelper.RejectsNonDefaultSamplingParams(Model) ? null : request.TopP;
