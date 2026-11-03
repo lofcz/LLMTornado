@@ -245,7 +245,8 @@ public partial class VendorAnthropicChatRequestMessageContent
 
                             bool dataPrefix = part.Image.Url.StartsWith("data:");
                             
-                            if (dataPrefix || !Uri.TryCreate(part.Image.Url, UriKind.Absolute, out _))
+                            // raw base64 may start with "/" (JPEG: "/9j/"), which parses as an absolute file URI on Unix, only http(s) is a remote URL
+                            if (dataPrefix || !Uri.TryCreate(part.Image.Url, UriKind.Absolute, out Uri? imageUri) || (imageUri.Scheme != Uri.UriSchemeHttp && imageUri.Scheme != Uri.UriSchemeHttps))
                             {
                                 if (part.Image.MimeType is null)
                                 {
