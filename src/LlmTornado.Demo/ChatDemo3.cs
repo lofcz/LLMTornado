@@ -10,6 +10,7 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using PuppeteerSharp;
+using PuppeteerSharp.BrowserData;
 using System.Text;
 
 namespace LlmTornado.Demo;
@@ -189,21 +190,23 @@ public partial class ChatDemo : DemoBase
         Console.WriteLine(response);
     }
 
+    /// <summary>
+    /// Launch options for <see cref="GoogleComputerUse"/>. The model picks the pages, so this uses the
+    /// installed, auto-updated Chrome with its sandbox on instead of a pinned download.
+    /// </summary>
+    public static LaunchOptions CreateComputerUseLaunchOptions() => new LaunchOptions
+    {
+        Headless = false, // Set to true for headless operation
+        DefaultViewport = new ViewPortOptions { Width = 1440, Height = 900 },
+        Channel = ChromeReleaseChannel.Stable
+    };
+
     [TornadoTest]
     [Flaky("manual interaction")]
     public static async Task GoogleComputerUse()
     {
-        // Download browser if needed
-        Console.WriteLine("Downloading browser for Puppeteer...");
-        await new BrowserFetcher().DownloadAsync();
-
         // Set up browser
-        IBrowser? browser = await Puppeteer.LaunchAsync(new LaunchOptions
-        {
-            Headless = false, // Set to true for headless operation
-            DefaultViewport = new ViewPortOptions { Width = 1440, Height = 900 },
-            Args = ["--no-sandbox", "--disable-setuid-sandbox"]
-        });
+        IBrowser? browser = await Puppeteer.LaunchAsync(CreateComputerUseLaunchOptions());
 
         IPage? page = await browser.NewPageAsync();
         await page.SetViewportAsync(new ViewPortOptions { Width = 1440, Height = 900 });

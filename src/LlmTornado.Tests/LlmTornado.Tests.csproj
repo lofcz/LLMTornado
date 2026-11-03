@@ -29,6 +29,7 @@
       <ProjectReference Include="..\LlmTornado.A2A\LlmTornado.A2A.csproj" />
       <ProjectReference Include="..\LlmTornado.Agents\LlmTornado.Agents.csproj" />
       <ProjectReference Include="..\LlmTornado.Demo\LlmTornado.Demo.csproj" />
+      <ProjectReference Include="..\LlmTornado.Internal.Press\LlmTornado.Internal.Press.csproj" />
       <ProjectReference Include="..\LlmTornado.Mcp\LlmTornado.Mcp.csproj" />
       <ProjectReference Include="..\LlmTornado.Microsoft.Extensions.AI\LlmTornado.Microsoft.Extensions.AI.csproj" />
       <ProjectReference Include="..\LlmTornado.VectorDatabases.ChromaDB\LlmTornado.VectorDatabases.ChromaDB.csproj" />

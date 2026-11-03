@@ -16,9 +16,7 @@ namespace LlmTornado.Internal.Press.Publisher;
 public static class MediumPublisher
 {
     private const int MAX_RETRIES = 2;
-    private static bool _browserDownloaded = false;
-    private static readonly object _downloadLock = new object();
-    
+
     public static async Task<bool> PublishArticleAsync(
         Article article,
         string cookieSid,
@@ -28,10 +26,7 @@ public static class MediumPublisher
         PressDbContext dbContext)
     {
         Console.WriteLine($"[Medium] 📤 Publishing: {article.Title}");
-        
-        // Ensure browser is downloaded (one-time operation)
-        await EnsureBrowserDownloadedAsync();
-        
+
         // Check if already published
         ArticlePublishStatus? publishStatus = await dbContext.ArticlePublishStatus
             .FirstOrDefaultAsync(p => p.ArticleId == article.Id && p.Platform == "medium");
@@ -106,16 +101,7 @@ public static class MediumPublisher
                 PuppeteerExtra extra = new PuppeteerExtra();
                 extra.Use(new StealthPlugin());
                 
-                browser = await extra.LaunchAsync(new LaunchOptions
-                {
-                    Headless = headless,
-                    Args = new[] 
-                    { 
-                        "--no-sandbox", 
-                        "--disable-setuid-sandbox",
-                        "--window-size=1920,1080"
-                    }
-                });
+                browser = await extra.LaunchAsync(CreateLaunchOptions(headless));
                 
                 IPage page = await browser.NewPageAsync();
                 
@@ -552,54 +538,16 @@ public static class MediumPublisher
         }
     }
     
-    private static async Task EnsureBrowserDownloadedAsync()
+    /// <summary>
+    /// Launch options for publishing. Medium pages carry third-party content, so this uses the installed,
+    /// auto-updated Chrome with its sandbox on instead of a pinned download.
+    /// </summary>
+    public static LaunchOptions CreateLaunchOptions(bool headless) => new LaunchOptions
     {
-        // Fast path - already downloaded
-        if (_browserDownloaded)
-            return;
-        
-        // Slow path - need to download (lock prevents duplicate downloads)
-        lock (_downloadLock)
-        {
-            // Double-check after acquiring lock
-            if (_browserDownloaded)
-                return;
-        }
-        
-        try
-        {
-            Console.WriteLine("[Medium] 🌐 Checking for Chrome browser...");
-            
-            BrowserFetcher browserFetcher = new BrowserFetcher();
-            
-            // Check if browser is already downloaded
-            IEnumerable<InstalledBrowser>? installedBrowsers = browserFetcher.GetInstalledBrowsers();
-            
-            if (!installedBrowsers.Any())
-            {
-                Console.WriteLine("[Medium] 📥 Downloading Chrome browser (one-time setup, ~150MB)...");
-                Console.WriteLine("[Medium]    This may take a few minutes...");
-                
-                await browserFetcher.DownloadAsync();
-                
-                Console.WriteLine("[Medium] ✅ Chrome browser downloaded successfully");
-            }
-            else
-            {
-                Console.WriteLine("[Medium] ✅ Chrome browser found");
-            }
-            
-            lock (_downloadLock)
-            {
-                _browserDownloaded = true;
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[Medium] ❌ Failed to download browser: {ex.Message}");
-            throw;
-        }
-    }
+        Headless = headless,
+        Channel = ChromeReleaseChannel.Stable,
+        Args = new[] { "--window-size=1920,1080" }
+    };
     
     /// <summary>
     /// Types text with realistic human-like delays between keystrokes
