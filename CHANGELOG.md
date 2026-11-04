@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Add Anthropic Messages thread sessions with full native history, streaming, bounded expiry/conflict recovery, refusal rollback, fallback handling, forks, and export/restore. Retain typed low-level create/continue requests and batch/token-count safeguards.
+- Support opt-in Anthropic API version `2026-10-21`, including sampling removal, message-content validation, and canonical rate-limit group metadata; preserve the legacy default.
+- Add Anthropic user-profile CRUD and enforcement data, request attribution for chat/token counting/batches, organization webhooks, and signature verification.
+- Add Anthropic usage/cost analytics and Claude Tag channel/workspace settings and Access bundle attachments, including native pagination and explicit-null updates.
+- Support Anthropic-managed Claude on Google Cloud with separate workspace/organization routing and caller-managed bearer-token refresh; document Opus 4.8 fast-mode retirement.
+- Omit an unset Anthropic task-budget remainder so the API can use the total budget as its default.
 - Read Cohere's `TIMEOUT` finish reason as an error instead of failing to deserialize the response.
 - Fix legacy-target builds by using the existing System.Collections.Immutable FrozenDictionary implementation instead of a conflicting local shim.
 - Add Claude Opus, Sonnet, and Haiku 5.5, including adaptive and between-tools thinking policies.

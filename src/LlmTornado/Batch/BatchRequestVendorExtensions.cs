@@ -9,6 +9,9 @@ namespace LlmTornado.Batch;
 /// </summary>
 public class BatchRequestVendorExtensions
 {
+    /// <summary>Anthropic batch-wide request attribution.</summary>
+    public BatchRequestVendorAnthropicExtensions? Anthropic { get; set; }
+
     /// <summary>
     /// OpenAI-specific extensions.
     /// </summary>
@@ -18,6 +21,13 @@ public class BatchRequestVendorExtensions
     /// Google/Gemini-specific extensions.
     /// </summary>
     public BatchRequestVendorGoogleExtensions? Google { get; set; }
+}
+
+/// <summary>Anthropic batch options; a profile applies to every item in the batch.</summary>
+public class BatchRequestVendorAnthropicExtensions
+{
+    /// <summary>End-customer profile ID, sent as an HTTP header.</summary>
+    public string? UserProfileId { get; set; }
 }
 
 /// <summary>

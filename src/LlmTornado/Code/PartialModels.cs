@@ -798,7 +798,7 @@ public enum ChatRequestServiceTiers
 }
 
 /// <summary>
-/// Controls the inference speed tier for supported models. Currently supported by Anthropic (Claude Opus 4.8 and Claude Opus 5).
+/// Controls the inference speed tier for supported models, including Anthropic Claude Opus 5.5.
 /// Fast mode was removed for Opus 4.6 (falls back to standard) and Opus 4.7 (returns an error).
 /// </summary>
 [JsonConverter(typeof(StringEnumConverter))]
@@ -813,7 +813,8 @@ public enum ChatRequestSpeeds
 
     /// <summary>
     /// Fast mode. Up to 2.5x higher output tokens per second compared to standard speed. Premium pricing applies.
-    /// Supported by Anthropic on Claude Opus 4.8 and Claude Opus 5. Requires the <c>fast-mode-2026-02-01</c> beta header.
+    /// Generally available on Claude Opus 5.5 without a beta header. Opus 5 requires <c>fast-mode-2026-02-01</c>.
+    /// Opus 4.8 fast mode is deprecated and will be removed on November 30, 2026; migrate fast requests to Opus 5.5.
     /// </summary>
     [EnumMember(Value = "fast")]
     Fast
@@ -2098,7 +2099,15 @@ public enum CapabilityEndpoints
     /// <summary>Provider voice-library endpoint.</summary>
     Voices,
     /// <summary>OpenAI project safety alert retrieval.</summary>
-    SafetyAlerts
+    SafetyAlerts,
+    /// <summary>Anthropic end-customer profiles.</summary>
+    AnthropicUserProfiles,
+    /// <summary>Anthropic usage and cost analytics.</summary>
+    AnthropicAnalytics,
+    /// <summary>Anthropic organization enforcement webhooks.</summary>
+    AnthropicOrganizationWebhooks,
+    /// <summary>Claude Tag channel, workspace and bundle configuration.</summary>
+    AnthropicClaudeTag
 }
 
 /// <summary>

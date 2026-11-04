@@ -54,6 +54,15 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
 
     public static Version OutboundVersion { get; set; } = OutboundDefaultVersion;
 
+    /// <summary>Anthropic protocol revision. Set October2026 to opt into the 2026-10-21 contract.</summary>
+    public string ApiRevision { get; set; } = AnthropicApiVersions.Legacy;
+
+    /// <summary>Optional Google Cloud routing and caller-owned token refresh.</summary>
+    public AnthropicGoogleCloudOptions? GoogleCloud { get; set; }
+
+    /// <summary>Optional OAuth bearer token source. Called for every request; replaces x-api-key authentication.</summary>
+    public Func<string>? BearerTokenProvider { get; set; }
+
     public Func<CapabilityEndpoints, string?, RequestUrlContext, string>? UrlResolver { get; set; } 
     
     public Action<HttpRequestMessage, object?, bool>? RequestResolver { get; set; }
@@ -448,6 +457,10 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
             CapabilityEndpoints.AnthropicManagedAgents => "agents",
             CapabilityEndpoints.AnthropicManagedAgentSessions => "sessions",
             CapabilityEndpoints.AnthropicManagedAgentEnvironments => "environments",
+            CapabilityEndpoints.AnthropicUserProfiles => "user_profiles",
+            CapabilityEndpoints.AnthropicAnalytics => "organizations/analytics",
+            CapabilityEndpoints.AnthropicOrganizationWebhooks => "organizations/webhooks",
+            CapabilityEndpoints.AnthropicClaudeTag => "organizations/claude_tag",
             _ => throw new Exception($"Anthropic doesn't support endpoint {endpoint}")
         };
     }
@@ -462,11 +475,11 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
 
             return UrlResolver is not null
                 ? UrlResolver.Invoke(endpoint, url, new RequestUrlContext(path, url, model))
-                : $"https://api.anthropic.com/v1/{path}";
+                : GoogleCloud?.GetUrl(path) ?? $"https://api.anthropic.com/v1/{path}";
         }
 
         string eStr = GetEndpointUrlFragment(endpoint);
-        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url, new RequestUrlContext(eStr, url, model)), eStr, url, model?.Name) : $"https://api.anthropic.com/v1/{eStr}{url}";
+        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url, new RequestUrlContext(eStr, url, model)), eStr, url, model?.Name) : GoogleCloud?.GetUrl($"{eStr}{url}") ?? $"https://api.anthropic.com/v1/{eStr}{url}";
     }
     
     public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request, ChatStreamEventHandler? eventHandler)
@@ -1053,7 +1066,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         };
         
         req.Headers.Add("User-Agent", EndpointBase.ResolveUserAgent(Api));
-        req.Headers.Add("anthropic-version", "2023-06-01");
+        req.Headers.Add("anthropic-version", (sourceObject as AnthropicThreadRequestContext)?.ApiRevision ?? ApiRevision);
         
         if (IsDirectBrowserAccessEnabled())
         {
@@ -1062,120 +1075,156 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
 
         ProviderAuthentication? auth = Api?.GetProvider(LLmProviders.Anthropic).Auth;
 
-        if (auth?.ApiKey is not null)
+        Func<string>? tokenProvider = GoogleCloud?.AccessTokenProvider ?? BearerTokenProvider;
+        if (GoogleCloud is not null && tokenProvider is null)
+            throw new InvalidOperationException("Google Cloud requires an access token provider.");
+        if (tokenProvider is not null)
+        {
+            string token = tokenProvider();
+            if (string.IsNullOrWhiteSpace(token)) throw new InvalidOperationException("The access token provider returned an empty token.");
+            req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        }
+        else if (auth?.ApiKey is not null)
         {
             req.Headers.Add("x-api-key", auth.ApiKey);
         }
 
+        string? profileId = sourceObject switch
+        {
+            AnthropicThreadRequestContext thread => thread.UserProfileId,
+            ChatRequest chat => chat.VendorExtensions?.Anthropic?.UserProfileId,
+            TokenizeRequest tokenize => tokenize.AnthropicUserProfileId ?? tokenize.SourceChatRequest?.VendorExtensions?.Anthropic?.UserProfileId,
+            BatchRequest batch => batch.VendorExtensions?.Anthropic?.UserProfileId,
+            _ => null
+        };
+        if (profileId is not null) req.Headers.Add("anthropic-user-profile-id", profileId);
+
         if (RequestResolver is not null)
         {
             RequestResolver.Invoke(req, data, streaming);
+            if (sourceObject is AnthropicThreadRequestContext context)
+            {
+                req.Headers.Remove("anthropic-beta");
+                req.Headers.Add("anthropic-beta", context.BetaHeaders);
+            }
         }
-        else if (!url.Contains("/organizations/", StringComparison.OrdinalIgnoreCase))
+        else if (sourceObject is AnthropicThreadRequestContext threadContext)
         {
-            string? currentModel = (sourceObject as ChatRequest)?.Model?.Name;
-            bool isOpus46Plus = IsOpus46OrNewer(currentModel);
-            
-            HashSet<string> betaHeaders = [
-                "files-api-2025-04-14", 
-                "code-execution-2025-08-25", 
-                "search-results-2025-06-09"
-            ];
-            
-            // Interleaved thinking header is deprecated on Opus 4.6+ (adaptive thinking auto-enables it)
-            if (!isOpus46Plus)
-            {
-                betaHeaders.Add("interleaved-thinking-2025-05-14");
-            }
-            
-            // Add effort beta header if applicable (Claude Opus 4.5 only; GA on 4.6+)
-            if (RequiresEffortHeader(sourceObject))
-            {
-                betaHeaders.Add("effort-2025-11-24");
-            }
-            
-            // Add compaction beta header if context management is configured
-            if (RequiresOnDemandCompactionHeader(sourceObject))
-            {
-                betaHeaders.Add(Compaction.CompactionRequest.OnDemandBetaHeader);
-            }
-            else if (RequiresCompactionHeader(sourceObject))
-            {
-                betaHeaders.Add(Compaction.CompactionRequest.BetaHeader);
-            }
-            
-            // Add task budget beta header if task budget is configured
-            if (RequiresTaskBudgetHeader(sourceObject))
-            {
-                betaHeaders.Add("task-budgets-2026-03-13");
-            }
-            
-            // Add advanced tool use beta header if applicable (programmatic tool calling, tool search)
-            if (RequiresAdvancedToolUseHeader(sourceObject))
-            {
-                betaHeaders.Add("advanced-tool-use-2025-11-20");
-            }
-            
-            // Add fast mode beta header if applicable
-            if (RequiresFastModeHeader(sourceObject))
-            {
-                betaHeaders.Add("fast-mode-2026-02-01");
-            }
-            
-            // Add dynamic web tools beta header when web_search_20260209 or web_fetch_20260209 are used
-            if (RequiresDynamicWebToolsHeader(sourceObject))
-            {
-                betaHeaders.Add("code-execution-web-tools-2026-02-09");
-            }
-            
-            if (RequiresAdvisorToolHeader(sourceObject))
-            {
-                betaHeaders.Add("advisor-tool-2026-03-01");
-            }
-
-            if (RequiresThinkingDisplayUpdatesHeader(sourceObject))
-            {
-                betaHeaders.Add("thinking-display-updates-2026-08-18");
-            }
-
-            if (RequiresThinkingBindingHeader(sourceObject))
-            {
-                betaHeaders.Add("thinking-binding-controls-2026-08-01");
-            }
-
-            if (RequiresServerSideFallbackHeader(sourceObject))
-            {
-                betaHeaders.Add("server-side-fallback-2026-07-01");
-            }
-
-            if (sourceObject is ChatRequest inlineRequest && AnthropicConversationTools.HasInlineChanges(inlineRequest))
-            {
-                betaHeaders.Add("inline-tools-2026-09-15");
-            }
-            else if (RequiresMidConversationToolChangesHeader(sourceObject))
-            {
-                betaHeaders.Add("mid-conversation-tool-changes-2026-07-01");
-            }
-
-            if (sourceObject is ChatRequest mcpListingRequest && AnthropicConversationTools.UsesMcpListings(mcpListingRequest))
-                betaHeaders.Add(AnthropicMcpBetaHeaders.McpClientSeptember2026);
-
-            if (RequiresMidConversationOutputConfigHeader(sourceObject))
-            {
-                betaHeaders.Add("mid-conversation-output-config-2026-07-01");
-            }
-
-            if (RequiresMidConversationSystemClearAtHeader(sourceObject))
-            {
-                betaHeaders.Add("mid-conversation-system-clear-at-2026-08-21");
-            }
-            
-            req.Headers.Add("anthropic-beta", AccumulateHeaders(betaHeaders, sourceObject));
+            req.Headers.Add("anthropic-beta", threadContext.BetaHeaders);
+        }
+        else if (!url.Contains("/organizations/", StringComparison.OrdinalIgnoreCase) && !url.Contains("/user_profiles", StringComparison.OrdinalIgnoreCase))
+        {
+            req.Headers.Add("anthropic-beta", GetBetaHeaders(sourceObject));
         }
 
         return req;
     }
-    
+
+    internal static HashSet<string> GetBetaHeaders(object? sourceObject)
+    {
+        string? currentModel = (sourceObject as ChatRequest)?.Model?.Name;
+        bool isOpus46Plus = IsOpus46OrNewer(currentModel);
+
+        HashSet<string> betaHeaders = [
+            "files-api-2025-04-14",
+            "code-execution-2025-08-25",
+            "search-results-2025-06-09"
+        ];
+
+        if (sourceObject is ChatRequest { VendorExtensions.Anthropic.Thread: not null })
+            betaHeaders.Add(AnthropicMessageThread.BetaHeader);
+
+        // Interleaved thinking header is deprecated on Opus 4.6+ (adaptive thinking auto-enables it)
+        if (!isOpus46Plus)
+        {
+            betaHeaders.Add("interleaved-thinking-2025-05-14");
+        }
+
+        // Add effort beta header if applicable (Claude Opus 4.5 only; GA on 4.6+)
+        if (RequiresEffortHeader(sourceObject))
+        {
+            betaHeaders.Add("effort-2025-11-24");
+        }
+
+        // Add compaction beta header if context management is configured
+        if (RequiresOnDemandCompactionHeader(sourceObject))
+        {
+            betaHeaders.Add(Compaction.CompactionRequest.OnDemandBetaHeader);
+        }
+        else if (RequiresCompactionHeader(sourceObject))
+        {
+            betaHeaders.Add(Compaction.CompactionRequest.BetaHeader);
+        }
+
+        // Add task budget beta header if task budget is configured
+        if (RequiresTaskBudgetHeader(sourceObject))
+        {
+            betaHeaders.Add("task-budgets-2026-03-13");
+        }
+
+        // Add advanced tool use beta header if applicable (programmatic tool calling, tool search)
+        if (RequiresAdvancedToolUseHeader(sourceObject))
+        {
+            betaHeaders.Add("advanced-tool-use-2025-11-20");
+        }
+
+        // Add fast mode beta header if applicable
+        if (RequiresFastModeHeader(sourceObject))
+        {
+            betaHeaders.Add("fast-mode-2026-02-01");
+        }
+
+        // Add dynamic web tools beta header when web_search_20260209 or web_fetch_20260209 are used
+        if (RequiresDynamicWebToolsHeader(sourceObject))
+        {
+            betaHeaders.Add("code-execution-web-tools-2026-02-09");
+        }
+
+        if (RequiresAdvisorToolHeader(sourceObject))
+        {
+            betaHeaders.Add("advisor-tool-2026-03-01");
+        }
+
+        if (RequiresThinkingDisplayUpdatesHeader(sourceObject))
+        {
+            betaHeaders.Add("thinking-display-updates-2026-08-18");
+        }
+
+        if (RequiresThinkingBindingHeader(sourceObject))
+        {
+            betaHeaders.Add("thinking-binding-controls-2026-08-01");
+        }
+
+        if (RequiresServerSideFallbackHeader(sourceObject))
+        {
+            betaHeaders.Add("server-side-fallback-2026-07-01");
+        }
+
+        if (sourceObject is ChatRequest inlineRequest && AnthropicConversationTools.HasInlineChanges(inlineRequest))
+        {
+            betaHeaders.Add("inline-tools-2026-09-15");
+        }
+        else if (RequiresMidConversationToolChangesHeader(sourceObject))
+        {
+            betaHeaders.Add("mid-conversation-tool-changes-2026-07-01");
+        }
+
+        if (sourceObject is ChatRequest mcpListingRequest && AnthropicConversationTools.UsesMcpListings(mcpListingRequest))
+            betaHeaders.Add(AnthropicMcpBetaHeaders.McpClientSeptember2026);
+
+        if (RequiresMidConversationOutputConfigHeader(sourceObject))
+        {
+            betaHeaders.Add("mid-conversation-output-config-2026-07-01");
+        }
+
+        if (RequiresMidConversationSystemClearAtHeader(sourceObject))
+        {
+            betaHeaders.Add("mid-conversation-system-clear-at-2026-08-21");
+        }
+
+        return AccumulateHeaders(betaHeaders, sourceObject);
+    }
+
     public override void ParseInboundHeaders<T>(T res, HttpResponseMessage response)
     {
         res.Provider = this;

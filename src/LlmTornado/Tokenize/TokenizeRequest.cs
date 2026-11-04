@@ -18,6 +18,10 @@ namespace LlmTornado.Tokenize;
 /// </summary>
 public class TokenizeRequest : ISerializableRequest
 {
+    /// <summary>Anthropic end-customer attribution. Defaults to the source chat request's profile.</summary>
+    [JsonIgnore]
+    public string? AnthropicUserProfileId { get; set; }
+
     /// <summary>
     ///     Creates a new, empty <see cref="TokenizeRequest" />
     /// </summary>

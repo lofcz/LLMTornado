@@ -600,7 +600,7 @@ public class AnthropicTaskBudget
     /// Budget remainder carried over from a prior request (e.g. after compaction).
     /// Defaults to <see cref="Total"/> when omitted.
     /// </summary>
-    [JsonProperty("remaining")]
+    [JsonProperty("remaining", NullValueHandling = NullValueHandling.Ignore)]
     public int? Remaining { get; set; }
     
     /// <summary>
@@ -651,6 +651,12 @@ public class AnthropicTaskBudget
 /// </summary>
 public class ChatRequestVendorAnthropicExtensions
 {
+    /// <summary>Optional server-held history. The application retains its own replay history.</summary>
+    public AnthropicMessageThread? Thread { get; set; }
+
+    /// <summary>End-customer attribution, sent in the anthropic-user-profile-id header.</summary>
+    public string? UserProfileId { get; set; }
+
     /// <summary>Summarize the conversation on demand. Cannot be combined with ContextManagement.</summary>
     public AnthropicOnDemandCompaction? Compaction { get; set; }
 

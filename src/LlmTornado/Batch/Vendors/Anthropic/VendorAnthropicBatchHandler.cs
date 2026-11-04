@@ -18,7 +18,7 @@ internal static class VendorAnthropicBatchHandler
         VendorAnthropicBatchRequest anthropicRequest = new VendorAnthropicBatchRequest(request, provider);
         string body = anthropicRequest.Serialize();
         
-        return await endpoint.HttpPost<BatchItem>(provider, CapabilityEndpoints.Batch, postData: body, ct: cancellationToken).ConfigureAwait(false);
+        return await endpoint.HttpPost<BatchItem>(provider, CapabilityEndpoints.Batch, postData: body, requestObj: request, ct: cancellationToken).ConfigureAwait(false);
     }
     
     public static async IAsyncEnumerable<BatchResult> StreamResults(BatchItem batch, IEndpointProvider provider, EndpointBase endpoint, [EnumeratorCancellation] CancellationToken cancellationToken)

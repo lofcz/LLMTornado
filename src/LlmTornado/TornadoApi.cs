@@ -36,6 +36,7 @@ using LlmTornado.Tokenize;
 using LlmTornado.ManagedAgents;
 using LlmTornado.ManagedAgents.Anthropic;
 using LlmTornado.RateLimits;
+using LlmTornado.Anthropic;
 using LlmTornado.Common;
 using LlmTornado.Compaction;
 using LlmTornado.Codex;
@@ -89,6 +90,10 @@ public class TornadoApi
     private readonly Lazy<AnthropicManagedAgentSessionsEndpoint> anthropicManagedAgentSessions;
     private readonly Lazy<AnthropicManagedAgentEnvironmentsEndpoint> anthropicManagedAgentEnvironments;
     private readonly Lazy<RateLimitsEndpoint> rateLimits;
+    private readonly Lazy<AnthropicUserProfilesEndpoint> anthropicUserProfiles;
+    private readonly Lazy<AnthropicAnalyticsEndpoint> anthropicAnalytics;
+    private readonly Lazy<AnthropicOrganizationWebhooksEndpoint> anthropicOrganizationWebhooks;
+    private readonly Lazy<AnthropicClaudeTagEndpoint> anthropicClaudeTag;
     private readonly Lazy<CompactionEndpoint> compaction;
     private readonly Lazy<CodexEndpoint> codex;
 
@@ -149,6 +154,10 @@ public class TornadoApi
         realtime = new Lazy<RealtimeEndpoint>(() => new RealtimeEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         live = new Lazy<LiveEndpoint>(() => new LiveEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         rateLimits = new Lazy<RateLimitsEndpoint>(() => new RateLimitsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        anthropicUserProfiles = new Lazy<AnthropicUserProfilesEndpoint>(() => new AnthropicUserProfilesEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        anthropicAnalytics = new Lazy<AnthropicAnalyticsEndpoint>(() => new AnthropicAnalyticsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        anthropicOrganizationWebhooks = new Lazy<AnthropicOrganizationWebhooksEndpoint>(() => new AnthropicOrganizationWebhooksEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        anthropicClaudeTag = new Lazy<AnthropicClaudeTagEndpoint>(() => new AnthropicClaudeTagEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         compaction = new Lazy<CompactionEndpoint>(() => new CompactionEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         codex = new Lazy<CodexEndpoint>(() => new CodexEndpoint(), LazyThreadSafetyMode.ExecutionAndPublication);
     }
@@ -628,6 +637,18 @@ public class TornadoApi
     ///     Requires an Admin API key (<c>sk-ant-admin...</c>).
     /// </summary>
     public RateLimitsEndpoint RateLimits => rateLimits.Value;
+
+    /// <summary>Anthropic end-customer profiles and enforcement status.</summary>
+    public AnthropicUserProfilesEndpoint AnthropicUserProfiles => anthropicUserProfiles.Value;
+
+    /// <summary>Anthropic organization token usage and cost analytics.</summary>
+    public AnthropicAnalyticsEndpoint AnthropicAnalytics => anthropicAnalytics.Value;
+
+    /// <summary>Anthropic organization enforcement webhook registration.</summary>
+    public AnthropicOrganizationWebhooksEndpoint AnthropicOrganizationWebhooks => anthropicOrganizationWebhooks.Value;
+
+    /// <summary>Claude Tag settings and Access bundle attachments.</summary>
+    public AnthropicClaudeTagEndpoint AnthropicClaudeTag => anthropicClaudeTag.Value;
 
     /// <summary>
     ///     OpenAI Realtime API (GA): client secrets, legacy sessions, and WebSocket voice/translation/transcription.

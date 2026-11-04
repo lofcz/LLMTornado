@@ -724,6 +724,9 @@ internal class VendorAnthropicChatRequest
 
     [JsonProperty("fallbacks")]
     public AnthropicFallbacks? Fallbacks { get; set; }
+
+    [JsonProperty("thread", NullValueHandling = NullValueHandling.Ignore)]
+    public AnthropicMessageThread? Thread { get; set; }
     
     public VendorAnthropicChatRequest(ChatRequest request, IEndpointProvider provider)
     {
@@ -731,9 +734,10 @@ internal class VendorAnthropicChatRequest
         MaxTokens = request.MaxTokens ?? 1024;
         StopSequences = request.MultipleStopSequences?.ToList();
         Stream = request.Stream;
-        Temperature = ChatModelAnthropicHelper.RejectsNonDefaultSamplingParams(Model) ? null : request.Temperature;
-        TopP = ChatModelAnthropicHelper.RejectsNonDefaultSamplingParams(Model) ? null : request.TopP;
-        TopK = ChatModelAnthropicHelper.RejectsNonDefaultSamplingParams(Model) ? null : request.TopK;
+        bool omitSampling = AnthropicApiVersions.UsesOctober2026(provider) || ChatModelAnthropicHelper.RejectsNonDefaultSamplingParams(Model);
+        Temperature = omitSampling ? null : request.Temperature;
+        TopP = omitSampling ? null : request.TopP;
+        TopK = omitSampling ? null : request.TopK;
         Messages = [];
         System = null;
         
@@ -938,6 +942,17 @@ internal class VendorAnthropicChatRequest
                 Tools?.OfType<VendorAnthropicToolFunction>().ToList());
         }
         
+        Thread = request.VendorExtensions?.Anthropic?.Thread;
+        if (Thread is not null)
+        {
+            Thread.Validate();
+            if (Thread.Type == "continue" && (System is not null || Tools is not null))
+                throw new ArgumentException("A thread continuation must omit system and tools; send only new messages.");
+            if (Compaction is not null)
+                throw new ArgumentException("On-demand compaction is not supported with message threads.");
+        }
+        AnthropicApiVersions.ValidateMessages(Messages, provider);
+
         if (request.ServiceTier is ChatRequestServiceTiers.Auto or ChatRequestServiceTiers.StandardOnly)
         {
             ServiceTier = request.ServiceTier;

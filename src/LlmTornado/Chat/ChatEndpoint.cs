@@ -8,6 +8,7 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Models;
 using LlmTornado.Common;
+using LlmTornado.Chat.Vendors.Anthropic;
 
 namespace LlmTornado.Chat;
 
@@ -56,6 +57,17 @@ public class ChatEndpoint : EndpointBase
 
         return convo;
     }
+
+    /// <summary>
+    /// Creates an Anthropic thread with owned local history, bounded expiry recovery, and streaming support.
+    /// Request fields are snapshotted. Tool calls are returned to the caller for execution.
+    /// </summary>
+    public AnthropicMessageThreadSession CreateAnthropicThread(ChatRequest requestPrototype, bool continueUnthreaded = false)
+        => new(this, Api, requestPrototype, continueUnthreaded);
+
+    /// <summary>Restores full native history in a new server thread. The snapshot is copied.</summary>
+    public AnthropicMessageThreadSession CreateAnthropicThread(AnthropicMessageThreadSnapshot snapshot, bool continueUnthreaded = false)
+        => new(this, Api, snapshot, continueUnthreaded);
     
     /// <summary>
     ///     Creates an ongoing chat which can easily encapsulate the conversation.  This is the simplest way to use the Chat

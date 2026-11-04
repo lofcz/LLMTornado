@@ -3,6 +3,105 @@
 Status: **in progress**. This is a requirement checklist, not a claim of completion.
 Review window: August 21–October 21, 2026, with older gaps considered when needed to support the current APIs.
 
+## Anthropic follow-up — November 4, 2026
+
+Reviewed the [Claude release notes](https://platform.claude.com/docs/en/release-notes/overview)
+since the October 21 sync (`98121a90`), including the October 20 profile/webhook additions absent
+from that implementation. This follow-up does not close unrelated items in the original audit below.
+
+| Release | Implementation or disposition |
+| --- | --- |
+| October 20–21: user profiles and enforcement | `AnthropicUserProfiles` exposes create/get/list/update/delete and current enforcement actions. Chat vendor options, `TokenizeRequest`, and batch vendor options send profile attribution as a header. Batch attribution applies to all items. Empty filtered pages retain `next_page`. |
+| October 20: organization webhooks | `AnthropicOrganizationWebhooks` exposes endpoint CRUD and secret regeneration with the required beta. Typed enforcement events and `AnthropicWebhookSignatureVerifier` verify raw-body HMAC signatures and timestamp tolerance. |
+| October 20: inference hooks and organization web restrictions | Server configuration and enforcement changes; existing Managed Agents web/network options still apply. No new client request field is required. |
+| October 21: API revision | `AnthropicEndpointProvider.ApiRevision = AnthropicApiVersions.October2026` opts in. Messages and batch items omit removed sampling fields; chat, batches and token counting reject forbidden content. Rate-limit responses support canonical `group` and legacy `group_type`. The legacy revision remains the default to preserve existing sampling behavior. |
+| October 22: Anthropic-managed Google Cloud | `AnthropicEndpointProvider.GoogleCloud` selects workspace or organization URLs. Its `AccessTokenProvider` supplies a fresh Google bearer token per request. No API-key or workspace header is sent. Credential acquisition and refresh belong to the caller; no Google authentication package is added. |
+| October 23: Claude Tag | `AnthropicClaudeTag` supports channel setup/list/get/update/delete, workspace list/get/update, bundle list/get, and bundle-target list/get/attach/detach. Native settings/provenance and Slack/resource IDs remain distinct. Assigning null to a settings update restores inheritance; unassigned fields are omitted. |
+| October 28: 128 MB requests | The transport imposes no 32 MB request cap. No client limit needed changing. |
+| October 29: usage/cost analytics | `AnthropicAnalytics.Usage` and `.Cost` use the dedicated beta, repeated bracket filters, opaque cursors, typed dimensions/actors and 64-bit token counters. Cost amounts remain exact decimal strings in cents. Legacy reporting APIs remain supported by Anthropic; there was no legacy reporting surface here to migrate. |
+| October 30: Opus 4.8 fast mode | Documented November 30 removal and Opus 5.5 replacement. Requests remain possible before retirement; the Opus 4.8 model itself is not marked retired. |
+| November 2: message threads | `Chat.CreateAnthropicThread` owns full native history, streams turns, replays once on explicit expiry/conflict errors, rolls back refused input, restarts after fallback, and supports independent forks/export/restore. Optional unsupported-request fallback switches to full unthreaded requests. Low-level `AnthropicMessageThread.Create/Continue` remains available. Threads are rejected in batches; token counting requires full history. |
+| November 3: watermark | Provider-side output marking; no request or response schema change. |
+
+### Using the new protocol and threads
+
+```csharp
+var provider = new AnthropicEndpointProvider
+{
+    Auth = new(LLmProviders.Anthropic, apiKey),
+    ApiRevision = AnthropicApiVersions.October2026
+};
+var api = new TornadoApi(provider);
+var request = new ChatRequest
+{
+    Model = ChatModel.Anthropic.Claude5.Opus55,
+    MaxTokens = 4096,
+    Messages = [new(ChatMessageRoles.User, "Summarize this task.")],
+    VendorExtensions = new(new ChatRequestVendorAnthropicExtensions
+    {
+        UserProfileId = profileId
+    })
+};
+var thread = api.Chat.CreateAnthropicThread(request, continueUnthreaded: true);
+var first = await thread.Send();
+var second = await thread.Send([new(ChatMessageRoles.User, "What should happen next?")]);
+
+await foreach (var chunk in thread.Stream([new(ChatMessageRoles.User, "Explain the next step.")]))
+{
+    // Consume chunks as with StreamChatEnumerable.
+}
+var completed = thread.LastMessage;
+var snapshot = thread.Export(); // Native blocks and fixed parameters; persist in application storage.
+var fork = thread.Fork();       // Independent local copy; first send creates a new server thread.
+var restored = api.Chat.CreateAnthropicThread(snapshot);
+```
+
+The session keeps native response blocks, including signed thinking and server-tool results, so replay
+preserves information that a conversion through shared chat messages could lose. It snapshots the
+prototype and feature headers. `Update` accepts native parameter fields; after a response it rejects
+changes to fixed fields, while allowing request limits, MCP authorization tokens, and container IDs to
+change. Fork before changing fixed fields. Tool calls are returned for the application to execute;
+the session does not run CLR tool delegates or a tool loop.
+
+Only `thread_not_found` (404), `thread_already_continued` (400), and `thread_continue_in_flight` (400)
+trigger a single replay. Unrelated 404s and fingerprint errors propagate. The optional
+`continueUnthreaded` policy retries an unsupported request without `thread`, and disables threads if
+the first continuation immediately after replay is missing again. Earlier message cache breakpoints
+are removed from replay; new message, system, tool, and top-level breakpoints are retained.
+
+A refusal rolls back messages supplied to that send, preserves previously staged input, and starts a
+new thread next time. Fallback responses remain in history but also require a new create. Call `Send()`
+without messages to resume `pause_turn`. Stream continuation advances only on `message_stop`.
+Disposing or cancelling a partial stream retains completed blocks and received text, drops unfinished
+tool inputs/thinking, and resets continuation. Unexpected EOF raises `IOException`. Nothing is retried
+after streamed data arrives; `Send()` with no new messages retries the interrupted turn without
+including its partial assistant response. A new user/tool-result message instead keeps the partial
+response in history. A session rejects overlapping operations until its stream has been disposed.
+
+For applications that already own history and recovery, `AnthropicMessageThread.Create/Continue`
+exposes the wire protocol on ordinary chat requests. That low-level API never automatically replays,
+rolls back input, or advances a caller-supplied ID. Structured errors are available through
+`AnthropicErrorResponse.Parse(result.Response)`.
+
+Implementation sources: [API migration](https://platform.claude.com/docs/en/api/migration-2026-10-21),
+[message threads](https://platform.claude.com/docs/en/build-with-claude/message-threads),
+[user profiles](https://platform.claude.com/docs/en/manage-claude/user-profiles),
+[organization webhooks](https://platform.claude.com/docs/en/manage-claude/organization-webhooks),
+[analytics](https://platform.claude.com/docs/en/manage-claude/usage-cost-analytics-api),
+[Claude Tag](https://platform.claude.com/docs/en/manage-claude/claude-tag-api), and
+[Google Cloud](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/anthropic-managed).
+
+Validation: **365 offline tests passed**, including **66 new contract/lifecycle tests**; **20 credentialed tests
+were skipped**. Local HTTP tests cover native routes, revision/beta/profile headers, repeated filters,
+exact cost strings, null updates, provider errors, and complete multi-request thread lifecycles. Thread
+checks exercise expiry/conflict recovery, refusal rollback, fallback, pause/resume, forks, independent
+snapshots, cache replay, cancellation, early disposal, truncated streams, and signed/tool block replay. The broader
+initial selection also picked up 54 demo tests without local API configuration; these are excluded
+from the offline result. Its remaining task-budget test exposed an existing unset-remainder
+serialization issue, fixed by omitting `remaining` when null. No credentialed provider calls were used.
+The final SDK build passed on net10.0, net8.0, net462, and netstandard2.0 with zero errors;
+existing repository warnings remain. `git diff --check` passed.
+
 ## Baseline evidence
 
 The starting worktree was clean at `3c5651a8`. There is no single uniform last-sync date:

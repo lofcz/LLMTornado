@@ -56,7 +56,7 @@ public class RateLimitsEndpoint : EndpointBase
         return HttpGet<AnthropicRateLimitsListResponse>(
             provider,
             Endpoint,
-            url: workspaceId,
+            url: provider.ApiUrl(Endpoint, System.Uri.EscapeDataString(workspaceId)),
             queryParams: query?.ToQueryParams(includeModelFilter: false),
             ct: cancellationToken);
     }

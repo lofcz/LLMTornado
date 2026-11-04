@@ -9,6 +9,9 @@ namespace LlmTornado.RateLimits;
 /// </summary>
 public sealed class AnthropicRateLimitsListQuery
 {
+    /// <summary>Maximum entries per page.</summary>
+    [JsonProperty("limit")]
+    public int? Limit { get; set; }
     /// <summary>
     /// Restricts the response to a single rate limit group category.
     /// </summary>
@@ -35,6 +38,7 @@ public sealed class AnthropicRateLimitsListQuery
     public Dictionary<string, object>? ToQueryParams(bool includeModelFilter = true)
     {
         Dictionary<string, object> parameters = [];
+        if (Limit is not null) parameters["limit"] = Limit.Value;
 
         if (GroupType is not null)
         {
@@ -87,6 +91,14 @@ public class AnthropicRateLimitsListResponse
 /// </summary>
 public class AnthropicRateLimitEntry
 {
+    /// <summary>Rate limit resource ID.</summary>
+    [JsonProperty("id")]
+    public string? Id { get; set; }
+
+    /// <summary>Canonical group metadata returned by API version 2026-10-21.</summary>
+    [JsonProperty("group")]
+    public AnthropicRateLimitGroup? Group { get; set; }
+
     /// <summary>
     /// Object type: <c>rate_limit</c> or <c>workspace_rate_limit</c>.
     /// </summary>
@@ -98,7 +110,8 @@ public class AnthropicRateLimitEntry
     /// </summary>
     [JsonProperty("group_type")]
     [JsonConverter(typeof(StringEnumConverter))]
-    public AnthropicRateLimitGroupType GroupType { get; set; }
+    public AnthropicRateLimitGroupType GroupType { get => Group?.Type ?? legacyGroupType; set => legacyGroupType = value; }
+    private AnthropicRateLimitGroupType legacyGroupType;
 
     /// <summary>
     /// Model IDs and aliases for <see cref="AnthropicRateLimitGroupType.ModelGroup"/> entries; otherwise null.
@@ -111,6 +124,20 @@ public class AnthropicRateLimitEntry
     /// </summary>
     [JsonProperty("limits")]
     public List<AnthropicRateLimitValue> Limits { get; set; } = [];
+}
+
+/// <summary>Rate-limit group metadata, replacing the legacy top-level group_type.</summary>
+public class AnthropicRateLimitGroup
+{
+    /// <summary>Group category.</summary>
+    [JsonProperty("type")]
+    public AnthropicRateLimitGroupType Type { get; set; }
+    /// <summary>Native group ID.</summary>
+    [JsonProperty("id")]
+    public string? Id { get; set; }
+    /// <summary>Model group's human-readable name, when provided.</summary>
+    [JsonProperty("display_name")]
+    public string? DisplayName { get; set; }
 }
 
 /// <summary>

@@ -27,6 +27,8 @@ internal class VendorAnthropicTokenizeRequest
 
     public VendorAnthropicTokenizeRequest(TokenizeRequest request, IEndpointProvider provider)
     {
+        if (request.SourceChatRequest?.VendorExtensions?.Anthropic?.Thread?.Type == "continue")
+            throw new System.ArgumentException("Token counting requires the complete conversation, system and tools, not a thread continuation. Supply a separate full-history TokenizeRequest.");
         Model = request.Model?.Name ?? string.Empty;
 
         if (request.Messages is not null)
@@ -52,6 +54,8 @@ internal class VendorAnthropicTokenizeRequest
         }
 
         // Include tools if provided
+        AnthropicApiVersions.ValidateMessages(Messages, provider);
+
         if (request.Tools is not null)
         {
             Tools = request.Tools.Where(x => x.Function is not null).Select(t => new VendorAnthropicToolFunction(t)).ToList();

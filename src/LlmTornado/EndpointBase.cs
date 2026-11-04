@@ -430,7 +430,7 @@ public abstract class EndpointBase
         }
     }
 
-    private async Task<RestDataOrException<HttpResponseMessage>> HttpRequestRawWithAllCodes(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? content = null, IModel? model = null, bool streaming = false, CancellationToken? ct = null, Dictionary<string, object?>? headers = null, object? requestObj = null)
+    private async Task<RestDataOrException<HttpResponseMessage>> HttpRequestRawWithAllCodes(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? content = null, IModel? model = null, bool streaming = false, CancellationToken? ct = null, Dictionary<string, object?>? headers = null, object? requestObj = null, bool captureHttpErrors = false)
     {
         url = BuildRequestUrl(url, provider, endpoint, model, queryParams);
         verb ??= HttpVerbs.Get;
@@ -499,7 +499,7 @@ public abstract class EndpointBase
 #endif
             result.Dispose();
             
-            if (Api.HttpStrict)
+            if (Api.HttpStrict && !captureHttpErrors)
             {
                 throw e;
             }
@@ -510,7 +510,7 @@ public abstract class EndpointBase
         {
             result?.Dispose();
             
-            if (Api.HttpStrict)
+            if (Api.HttpStrict && !captureHttpErrors)
             {
                 throw;
             }
@@ -593,9 +593,9 @@ public abstract class EndpointBase
         return res;
     }
     
-    internal async Task<HttpCallResult<T>> HttpRequestRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, IModel? model = null, object? requestObj = null, CancellationToken? ct = null, Dictionary<string, object?>? headers = null)
+    internal async Task<HttpCallResult<T>> HttpRequestRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, IModel? model = null, object? requestObj = null, CancellationToken? ct = null, Dictionary<string, object?>? headers = null, bool captureHttpErrors = false)
     {
-        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, model, false, ct, headers, requestObj).ConfigureAwait(false);
+        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, model, false, ct, headers, requestObj, captureHttpErrors).ConfigureAwait(false);
         
         try
         {
@@ -890,9 +890,9 @@ public abstract class EndpointBase
     /// <summary>
     /// Gets data as a series of server sent events (SSE).
     /// </summary>
-    internal async Task<TornadoStreamRequest> HttpStreamingRequestData(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, IModel? model = null, object? requestObj = null, CancellationToken token = default, Dictionary<string, object?>? headers = null)
+    internal async Task<TornadoStreamRequest> HttpStreamingRequestData(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, IModel? model = null, object? requestObj = null, CancellationToken token = default, Dictionary<string, object?>? headers = null, bool captureHttpErrors = false)
     {
-        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, model, true, token, headers, requestObj).ConfigureAwait(false);
+        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, model, true, token, headers, requestObj, captureHttpErrors).ConfigureAwait(false);
 
         if (response.Exception is not null || response.Data is null)
         {

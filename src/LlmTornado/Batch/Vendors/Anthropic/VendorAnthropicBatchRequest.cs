@@ -37,6 +37,11 @@ internal class VendorAnthropicBatchRequest
     {
         foreach (BatchRequestItem item in request.Requests)
         {
+            if (item.Params.VendorExtensions?.Anthropic?.Thread is not null)
+                throw new System.ArgumentException("Message threads are not supported in Anthropic batches.");
+            string? itemProfile = item.Params.VendorExtensions?.Anthropic?.UserProfileId;
+            if (itemProfile is not null && itemProfile != request.VendorExtensions?.Anthropic?.UserProfileId)
+                throw new System.ArgumentException("Set one UserProfileId on the batch; individual items cannot use different profiles.");
             Requests.Add(new VendorAnthropicBatchRequestItem(item, provider));
         }
     }

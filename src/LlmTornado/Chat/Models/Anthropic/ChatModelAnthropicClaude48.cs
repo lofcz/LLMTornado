@@ -11,9 +11,10 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelAnthropicClaude48 : IVendorModelClassProvider
 {
     /// <summary>
-    /// Claude Opus 4.8 — Anthropic's most capable generally available model.
+    /// Claude Opus 4.8, a previous-generation Opus model.
     /// 1M context window by default, 128K max output, adaptive thinking, high-res vision (2576px long edge).
     /// API model ID: <c>claude-opus-4-8</c>.
+    /// Fast mode is deprecated, with removal on November 30, 2026. Use Opus 5.5 for fast mode.
     /// </summary>
     public static readonly ChatModel ModelOpus = new ChatModel(Opus48ModelId, LLmProviders.Anthropic, Opus47PlusContextTokens)
     {
