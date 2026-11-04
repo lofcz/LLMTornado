@@ -12,9 +12,41 @@ on:
           - patch
           - minor
           - major
+      existing_tag:
+        description: 'Retry publishing the assets of an existing release (for example v3.8.82)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nuget-release
+  cancel-in-progress: false
 
 jobs:
+  retry-publish:
+    if: inputs.existing_tag != ''
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ inputs.existing_tag }}
+    steps:
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.100'
+    - name: Download existing release packages
+      run: |
+        [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+        gh release download "$RELEASE_TAG" --pattern 'LlmTornado*.nupkg' --dir ./nupkgs
+    - name: Push to NuGet
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      run: dotnet nuget push "./nupkgs/LlmTornado*.nupkg" --source "https://api.nuget.org/v3/index.json" --api-key "$NUGET_API_KEY" --skip-duplicate
+
   build-and-release:
+    if: inputs.existing_tag == ''
     runs-on: ubuntu-latest
     
     steps:
@@ -22,6 +54,7 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        ref: ${{ github.ref_name }}
     
     # Setup .NET SDK
     - name: Setup .NET
@@ -42,6 +75,8 @@ jobs:
     # Check which projects changed and calculate their new versions
     - name: Check Changes and Calculate Versions
       id: version_check
+      env:
+        RELEASE_TYPE: ${{ inputs.release_type }}
       run: |
         SHOULD_RELEASE="false"
         CHANGED_PROJECTS=""
@@ -59,7 +94,7 @@ jobs:
           PROJECT_DIR=$(dirname "$proj")
           
           # Get current version from csproj
-          CURRENT_VERSION=$(grep -oP '(?<=<Version>).*(?=</Version>)' "$proj" || echo "0.0.0")
+          CURRENT_VERSION=$(grep -oP '(?<=<Version>).*(?=</Version>)' "$proj" || true)
           
           if [ -z "$CURRENT_VERSION" ]; then
             echo "Warning: Could not find version in $proj"
@@ -73,9 +108,9 @@ jobs:
           PATCH="${VERSION_PARTS[2]}"
           
           # Check if project has changes since last tag
-          if [ -z "$LATEST_TAG" ] || ! git diff --quiet $LATEST_TAG HEAD -- "$PROJECT_DIR"; then
+          if [ -z "$LATEST_TAG" ] || ! git diff --quiet "$LATEST_TAG" HEAD -- "$PROJECT_DIR"; then
             # Calculate new version based on release type
-            case "${{ github.event.inputs.release_type }}" in
+            case "$RELEASE_TYPE" in
               "major")
                 PROJECT_NEW_VERSION="$((MAJOR + 1)).0.0"
                 ;;
@@ -109,11 +144,11 @@ jobs:
         echo "Final highest version will be: v$NEW_VERSION"
         
         # Set environment variables for next steps
-        echo "CHANGED_PROJECTS<<EOF" >> $GITHUB_ENV
-        echo -e "$CHANGED_PROJECTS" >> $GITHUB_ENV
-        echo "EOF" >> $GITHUB_ENV
-        echo "SHOULD_RELEASE=$SHOULD_RELEASE" >> $GITHUB_ENV
-        echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+        echo "CHANGED_PROJECTS<<EOF" >> "$GITHUB_ENV"
+        echo -e "$CHANGED_PROJECTS" >> "$GITHUB_ENV"
+        echo "EOF" >> "$GITHUB_ENV"
+        echo "SHOULD_RELEASE=$SHOULD_RELEASE" >> "$GITHUB_ENV"
+        echo "NEW_VERSION=$NEW_VERSION" >> "$GITHUB_ENV"
 
     # Generate release notes with commits and changed projects
     - name: Generate Release Notes
@@ -124,14 +159,14 @@ jobs:
         if [ -z "$PREVIOUS_TAG" ]; then
           COMMITS=$(git log --pretty=format:"- %s" --no-merges)
         else
-          COMMITS=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s" --no-merges)
+          COMMITS=$(git log "${PREVIOUS_TAG}..HEAD" --pretty=format:"- %s" --no-merges)
         fi
-        echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
-        echo "## What's Changed" >> $GITHUB_ENV
-        echo "$COMMITS" >> $GITHUB_ENV
-        echo -e "\n## Updated Projects" >> $GITHUB_ENV
-        echo "${{ env.CHANGED_PROJECTS }}" >> $GITHUB_ENV
-        echo "EOF" >> $GITHUB_ENV
+        {
+          echo "## What's Changed"
+          echo "$COMMITS"
+          echo -e "\n## Updated Projects"
+          echo "$CHANGED_PROJECTS"
+        } > "$RUNNER_TEMP/release-notes.md"
     
     # Restore project dependencies
     - name: Restore dependencies
@@ -151,49 +186,31 @@ jobs:
       run: dotnet pack LlmTornado.slnx --configuration Release --no-build --output ../nupkgs
       working-directory: ./src
     
-    # Create GitHub release
-    - name: Create Release
-      if: env.SHOULD_RELEASE == 'true'
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v${{ env.NEW_VERSION }}
-        release_name: Release v${{ env.NEW_VERSION }}
-        body: ${{ env.RELEASE_NOTES }}
-        draft: false
-        prerelease: false
-    
-    # Upload NuGet packages as release assets
-    - name: Upload Release Assets
-      if: env.SHOULD_RELEASE == 'true'
-      uses: softprops/action-gh-release@v1
-      with:
-        files: ./nupkgs/*.nupkg
-        tag_name: v${{ env.NEW_VERSION }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    
-    # Publish packages to NuGet.org
-    - name: Push to NuGet
-      if: env.SHOULD_RELEASE == 'true'
-      run: dotnet nuget push "./nupkgs/*.nupkg" --source "https://api.nuget.org/v3/index.json" --api-key ${{secrets.NUGET_API_KEY}} --skip-duplicate
-    
-    # Commit version updates and create tag
+    # Persist versions before creating the release or publishing packages.
     - name: Commit version updates
       if: env.SHOULD_RELEASE == 'true' && env.NEW_VERSION != ''
+      env:
+        RELEASE_BRANCH: ${{ github.ref_name }}
       run: |
-        if [ -z "${{ env.NEW_VERSION }}" ]; then
-          echo "Error: NEW_VERSION is not set"
-          exit 1
-        fi
-        
-        echo "Creating release for version v${{ env.NEW_VERSION }}"
-        
+        echo "Creating release for version v$NEW_VERSION"
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add .
-        git commit -m "Update project versions to v${{ env.NEW_VERSION }}"
-        git tag -a "v${{ env.NEW_VERSION }}" -m "Release v${{ env.NEW_VERSION }}"
-        git push --follow-tags
+        git add -- 'src/**/*.csproj'
+        git commit -m "Update project versions to v$NEW_VERSION"
+        git tag -a "v$NEW_VERSION" -m "Release v$NEW_VERSION"
+        git push --atomic origin "HEAD:refs/heads/$RELEASE_BRANCH" "refs/tags/v$NEW_VERSION"
+
+    - name: Create Release and Upload Assets
+      if: env.SHOULD_RELEASE == 'true'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release create "v$NEW_VERSION" ./nupkgs/LlmTornado*.nupkg \
+          --verify-tag --title "Release v$NEW_VERSION" \
+          --notes-file "$RUNNER_TEMP/release-notes.md"
+
+    - name: Push to NuGet
+      if: env.SHOULD_RELEASE == 'true'
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      run: dotnet nuget push "./nupkgs/LlmTornado*.nupkg" --source "https://api.nuget.org/v3/index.json" --api-key "$NUGET_API_KEY" --skip-duplicate
