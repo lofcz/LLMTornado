@@ -335,15 +335,18 @@ internal class VendorGoogleChatRequestMessagePart
             {
                 if (part.Image is not null)
                 {
-                    if (part.Image.MimeType is null)
+                    (string resolvedMimeType, string resolvedData) = ResolveInlinePayload(part.Image.Url, part.Image.MimeType, string.Empty);
+                    string? imageMimeType = part.Image.MimeType ?? (resolvedMimeType.Length > 0 ? resolvedMimeType : null);
+
+                    if (imageMimeType is null)
                     {
                         throw new Exception("Google requires MIME type of all images to be set, supported values are: image/png, image/jpeg");
                     }
                     
                     InlineData = new VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartInlineData
                     {
-                        MimeType = part.Image.MimeType,
-                        Data = part.Image.Url
+                        MimeType = imageMimeType,
+                        Data = resolvedData
                     };
                 }
                 
