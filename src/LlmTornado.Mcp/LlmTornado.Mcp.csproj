@@ -5,7 +5,7 @@
         <Nullable>enable</Nullable>
         <TargetFrameworks>net10.0;net8.0;netstandard2.0</TargetFrameworks>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <Version>1.1.66</Version>
+        <Version>1.1.67</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/lofcz/LlmTornado</PackageProjectUrl>
         <RepositoryUrl>https://github.com/lofcz/LlmTornado</RepositoryUrl>
