@@ -248,7 +248,20 @@ public partial class VendorAnthropicChatRequestMessageContent
                             // raw base64 may start with "/" (JPEG: "/9j/"), which parses as an absolute file URI on Unix, only http(s) is a remote URL
                             if (dataPrefix || !Uri.TryCreate(part.Image.Url, UriKind.Absolute, out Uri? imageUri) || (imageUri.Scheme != Uri.UriSchemeHttp && imageUri.Scheme != Uri.UriSchemeHttps))
                             {
-                                if (part.Image.MimeType is null)
+                                string? mediaType = part.Image.MimeType;
+
+                                // a data URI carries its own MIME type: data:image/png;base64,...
+                                if (mediaType is null && dataPrefix)
+                                {
+                                    int semicolonIndex = part.Image.Url.IndexOf(';');
+                                    
+                                    if (semicolonIndex > 5)
+                                    {
+                                        mediaType = part.Image.Url[5..semicolonIndex];
+                                    }
+                                }
+
+                                if (mediaType is null)
                                 {
                                     throw new Exception("MIME type of the image must be set, supported values for Anthropic are: image/jpeg, image/png, image/gif, image/webp");
                                 }
@@ -271,7 +284,7 @@ public partial class VendorAnthropicChatRequestMessageContent
                                 writer.WriteValue("base64");
                         
                                 writer.WritePropertyName("media_type");
-                                writer.WriteValue(part.Image.MimeType);
+                                writer.WriteValue(mediaType);
                             
                                 writer.WritePropertyName("data");
                                 writer.WriteValue(img);

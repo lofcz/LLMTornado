@@ -45,4 +45,29 @@ public class AnthropicImageBase64Tests
         Assert.That(source["type"]?.ToString(), Is.EqualTo("url"));
         Assert.That(source["url"]?.ToString(), Is.EqualTo("https://example.com/cat.jpg"));
     }
+
+    [Test]
+    public void DataUri_WithoutMimeType_StripsPrefixAndInfersMimeType()
+    {
+        JObject source = SerializeImageSource("data:image/png;base64,QUJD", null);
+
+        Assert.That(source["type"]?.ToString(), Is.EqualTo("base64"));
+        Assert.That(source["media_type"]?.ToString(), Is.EqualTo("image/png"));
+        Assert.That(source["data"]?.ToString(), Is.EqualTo("QUJD"));
+    }
+
+    [Test]
+    public void DataUri_WithExplicitMimeType_KeepsExplicitMimeType()
+    {
+        JObject source = SerializeImageSource("data:image/png;base64,QUJD", "image/jpeg");
+
+        Assert.That(source["media_type"]?.ToString(), Is.EqualTo("image/jpeg"));
+        Assert.That(source["data"]?.ToString(), Is.EqualTo("QUJD"));
+    }
+
+    [Test]
+    public void RawBase64_WithoutMimeType_StillThrows()
+    {
+        Assert.Throws<Exception>(() => SerializeImageSource("QUJD", null));
+    }
 }
