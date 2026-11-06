@@ -3,6 +3,8 @@ using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Code;
 using LlmTornado.Code.Vendor;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Tests;
 
@@ -42,5 +44,25 @@ public class MultipleStopSequencesTests
 
         Assert.That(anthropic.StopSequences, Is.EqualTo(new[] { "Human: " }));
         Assert.That(cohere.StopSequences, Is.EqualTo(new[] { "Human: " }));
+    }
+
+    [Test]
+    public void Anthropic_SerializesStopSequencesWithCorrectWireName()
+    {
+        VendorAnthropicChatRequest vendor = new VendorAnthropicChatRequest(CreateRequest("END", "STOP"), new AnthropicEndpointProvider());
+        JObject json = JObject.Parse(JsonConvert.SerializeObject(vendor));
+
+        Assert.That(json["stop_sequences"]?.ToObject<string[]>(), Is.EqualTo(new[] { "END", "STOP" }));
+        Assert.That(json.ContainsKey("stop_seqences"), Is.False);
+    }
+
+    [Test]
+    public void Anthropic_OmitsStopSequencesWhenNotSet()
+    {
+        ChatRequest request = new ChatRequest { Messages = [new ChatMessage(ChatMessageRoles.User, "test")] };
+        VendorAnthropicChatRequest vendor = new VendorAnthropicChatRequest(request, new AnthropicEndpointProvider());
+        JObject json = JObject.Parse(JsonConvert.SerializeObject(vendor));
+
+        Assert.That(json.ContainsKey("stop_sequences"), Is.False);
     }
 }

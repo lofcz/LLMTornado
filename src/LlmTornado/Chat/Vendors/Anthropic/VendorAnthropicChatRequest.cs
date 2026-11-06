@@ -683,7 +683,7 @@ internal class VendorAnthropicChatRequest
     public int MaxTokens { get; set; }
     [JsonProperty("metadata")]
     public VendorAnthropicChatRequestMetadata? Metadata { get; set; }
-    [JsonProperty("stop_seqences")]
+    [JsonProperty("stop_sequences", NullValueHandling = NullValueHandling.Ignore)]
     public List<string>? StopSequences { get; set; }
     [JsonProperty("stream")]
     public bool? Stream { get; set; }
