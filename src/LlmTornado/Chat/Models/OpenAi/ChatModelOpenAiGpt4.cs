@@ -33,6 +33,7 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     /// <summary>
     /// Latest o1 model snapshot.
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public static readonly ChatModel ModelO1Pro = new ChatModel("o1-pro", LLmProviders.OpenAi, 200_000)
     {
         EndpointCapabilities = [ ChatModelEndpointCapabilities.Responses, ChatModelEndpointCapabilities.Batch ]
@@ -41,56 +42,67 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     /// <summary>
     /// <inheritdoc cref="ModelO1Pro"/>
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public readonly ChatModel O1Pro = ModelO1Pro;
     
     /// <summary>
     /// Latest o1 model snapshot.
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public static readonly ChatModel ModelO1241217 = new ChatModel("o1-2024-12-17", LLmProviders.OpenAi, 200_000);
 
     /// <summary>
     /// <inheritdoc cref="ModelO1241217"/>
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public readonly ChatModel O1241217 = ModelO1241217;
     
     /// <summary>
     /// Points to the most recent snapshot of the o1 model: o1-preview-2024-09-12.
     /// </summary>
+    [Obsolete("Retired on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public static readonly ChatModel ModelO1 = new ChatModel("o1-preview", LLmProviders.OpenAi, 128_000);
     
     /// <summary>
     /// <inheritdoc cref="ModelO1"/>
     /// </summary>
+    [Obsolete("Retired on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public readonly ChatModel O1 = ModelO1;
     
     /// <summary>
     /// O1 Snaphot from 24/09/12.
     /// </summary>
+    [Obsolete("Retired on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public static readonly ChatModel ModelO1240912 = new ChatModel("o1-preview-2024-09-12", LLmProviders.OpenAi, 128_000);
 
     /// <summary>
     /// <inheritdoc cref="ModelO1240912"/>
     /// </summary>
+    [Obsolete("Retired on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public readonly ChatModel O1240912 = ModelO1240912;
     
     /// <summary>
     /// Points to the most recent o1-mini snapshot: o1-mini-2024-09-12
     /// </summary>
+    [Obsolete("Retired on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Terra instead.")]
     public static readonly ChatModel ModelO1Mini = new ChatModel("o1-mini", LLmProviders.OpenAi, 128_000);
 
     /// <summary>
     /// <inheritdoc cref="ModelO1Mini"/>
     /// </summary>
+    [Obsolete("Retired on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Terra instead.")]
     public readonly ChatModel O1Mini = ModelO1Mini;
     
     /// <summary>
     /// Points to the most recent o1-mini snapshot: o1-mini-2024-09-12
     /// </summary>
+    [Obsolete("Retired on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Terra instead.")]
     public static readonly ChatModel ModelO1Mini240912 = new ChatModel("o1-mini-2024-09-12", LLmProviders.OpenAi, 128_000);
 
     /// <summary>
     /// <inheritdoc cref="ModelO1Mini240912"/>
     /// </summary>
+    [Obsolete("Retired on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Terra instead.")]
     public readonly ChatModel O1Mini240912 = ModelO1Mini240912;
     
     /// <summary>
@@ -126,11 +138,13 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     /// <summary>
     /// Most advanced, multimodal flagship model that’s cheaper and faster than GPT-4 Turbo. gpt-4o currently points to this version.
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public static readonly ChatModel ModelO240513 = new ChatModel("gpt-4o-2024-05-13", LLmProviders.OpenAi, 128_000);
     
     /// <summary>
     /// <inheritdoc cref="ModelO240513"/>
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public readonly ChatModel O240513 = ModelO240513;
     
     /// <summary>
@@ -206,41 +220,49 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     /// <summary>
     /// The latest GPT-4 Turbo model with vision capabilities. Vision requests can now use JSON mode and function calling. Currently points to gpt-4-turbo-2024-04-09.
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public static readonly ChatModel ModelTurbo = new ChatModel("gpt-4-turbo", LLmProviders.OpenAi, 128_000);
 
     /// <summary>
     /// <inheritdoc cref="ModelTurbo"/>
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public readonly ChatModel Turbo = ModelTurbo;
     
     /// <summary>
     /// GPT-4 Turbo with Vision model. Vision requests can now use JSON mode and function calling. gpt-4-turbo currently points to this version.
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public static readonly ChatModel ModelTurbo240409 = new ChatModel("gpt-4-turbo-2024-04-09", LLmProviders.OpenAi, 128_000);
 
     /// <summary>
     /// <inheritdoc cref="ModelTurbo240409"/>
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public readonly ChatModel Turbo240409 = ModelTurbo240409;
     
     /// <summary>
     /// GPT-4 Turbo preview model intended to reduce cases of “laziness” where the model doesn’t complete a task. Returns a maximum of 4,096 output tokens.
     /// </summary>
+    [Obsolete("Retired March 26, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public static readonly ChatModel ModelPreview240125 = new ChatModel("gpt-4-0125-preview", LLmProviders.OpenAi, 128_000);
 
     /// <summary>
     /// <inheritdoc cref="ModelPreview240125"/>
     /// </summary>
+    [Obsolete("Retired March 26, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public readonly ChatModel Preview240125 = ModelPreview240125;
     
     /// <summary>
     /// GPT-4 Turbo preview model featuring improved instruction following, JSON mode, reproducible outputs, parallel function calling, and more. Returns a maximum of 4,096 output tokens. This is a preview model.
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public static readonly ChatModel ModelPreview231106 = new ChatModel("gpt-4-1106-preview", LLmProviders.OpenAi, 128_000);
 
     /// <summary>
     /// <inheritdoc cref="ModelPreview231106"/>
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public readonly ChatModel Preview231106 = ModelPreview231106;
     
     /// <summary>
@@ -257,51 +279,61 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     /// <summary>
     /// GPT-4 model with the ability to understand images, in addition to all other GPT-4 Turbo capabilities. This is a preview model, we recommend developers to now use gpt-4-turbo which includes vision capabilities. Returns a maximum of 4,096 output tokens.
     /// </summary>
+    [Obsolete("Retired on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public static readonly ChatModel ModelVisionPreview231106 = new ChatModel("gpt-4-1106-vision-preview", LLmProviders.OpenAi, 128_000);
 
     /// <summary>
     /// <inheritdoc cref="ModelVisionPreview231106"/>
     /// </summary>
+    [Obsolete("Retired on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public readonly ChatModel VisionPreview231106 = ModelVisionPreview231106;
     
     /// <summary>
     /// Currently points to gpt-4.
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public static readonly ChatModel ModelDefault = new ChatModel("gpt-4", LLmProviders.OpenAi, 8_192);
 
     /// <summary>
     /// <inheritdoc cref="ModelDefault"/>
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public readonly ChatModel Default = ModelDefault;
     
     /// <summary>
     /// Snapshot of gpt-4 from June 13th 2023 with improved function calling support.
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public static readonly ChatModel ModelPreview230613 = new ChatModel("gpt-4-0613", LLmProviders.OpenAi, 8_192);
 
     /// <summary>
     /// <inheritdoc cref="ModelPreview230613"/>
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public readonly ChatModel Preview230613 = ModelPreview230613;
     
     /// <summary>
     /// Currently points to gpt-4-32k-0613.
     /// </summary>
+    [Obsolete("Retired on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public static readonly ChatModel ModelContext32K = new ChatModel("gpt-4-32k", LLmProviders.OpenAi, 32_768);
 
     /// <summary>
     /// <inheritdoc cref="ModelContext32K"/>
     /// </summary>
+    [Obsolete("Retired on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public readonly ChatModel Context32K = ModelContext32K;
     
     /// <summary>
     /// Snapshot of gpt-4-32k from June 13th 2023 with improved function calling support. This model was never rolled out widely in favor of GPT-4 Turbo.
     /// </summary>
+    [Obsolete("Retired on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public static readonly ChatModel ModelContext32K230613 = new ChatModel("gpt-4-32k-0613", LLmProviders.OpenAi, 32_768);
 
     /// <summary>
     /// <inheritdoc cref="ModelContext32K230613"/>
     /// </summary>
+    [Obsolete("Retired on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public readonly ChatModel Context32K230613 = ModelContext32K230613;
     
     /// <summary>
