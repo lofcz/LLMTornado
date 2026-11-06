@@ -26,11 +26,13 @@ public class ChatModelOpenAiO4 : IVendorModelClassProvider
     /// <summary>
     /// o4-mini is our latest small o-series model. It's optimized for fast, effective reasoning with exceptionally efficient performance in coding and visual tasks.
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Terra instead.")]
     public static readonly ChatModel ModelV4Mini = new ChatModel("o4-mini", LLmProviders.OpenAi, 200_000, [ "o4-mini-2025-04-16" ]);
 
     /// <summary>
     /// <inheritdoc cref="ModelV4Mini"/>
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Terra instead.")]
     public readonly ChatModel V4Mini = ModelV4Mini;
     
     /// <summary>

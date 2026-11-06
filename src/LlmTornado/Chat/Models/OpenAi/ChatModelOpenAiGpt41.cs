@@ -39,11 +39,13 @@ public class ChatModelOpenAiGpt41 : IVendorModelClassProvider
     /// <summary>
     /// Latest snapshot of GPT-4.1-Nano, currently gpt-4.1-mini-2025-04-14.
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Luna instead.")]
     public static readonly ChatModel ModelV41Nano = new ChatModel("gpt-4.1-nano", LLmProviders.OpenAi, 1_000_000, [ "gpt-4.1-nano-2025-04-14" ]);
 
     /// <summary>
     /// <inheritdoc cref="ModelV41Nano"/>
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Luna instead.")]
     public readonly ChatModel V41Nano = ModelV41Nano;
 
     /// <summary>

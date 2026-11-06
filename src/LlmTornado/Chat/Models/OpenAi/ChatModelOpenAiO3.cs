@@ -26,11 +26,13 @@ public class ChatModelOpenAiO3 : IVendorModelClassProvider
     /// <summary>
     /// Latest o3 mini model snapshot.
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public static readonly ChatModel ModelMini250131 = new ChatModel("o3-mini-2025-01-31", LLmProviders.OpenAi, 200_000);
 
     /// <summary>
     /// <inheritdoc cref="ModelMini250131"/>
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public readonly ChatModel Mini250131 = ModelMini250131;
     
     /// <summary>
@@ -46,11 +48,13 @@ public class ChatModelOpenAiO3 : IVendorModelClassProvider
     /// <summary>
     /// Latest o3 mini model snapshot.
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public static readonly ChatModel ModelMini = new ChatModel("o3-mini", LLmProviders.OpenAi, 128_000);
     
     /// <summary>
     /// <inheritdoc cref="ModelMini"/>
     /// </summary>
+    [Obsolete("Retired October 23, 2026 on the OpenAI API. Use ChatModel.OpenAi.Gpt56.V56Sol instead.")]
     public readonly ChatModel Mini = ModelMini;
     
     /// <summary>
