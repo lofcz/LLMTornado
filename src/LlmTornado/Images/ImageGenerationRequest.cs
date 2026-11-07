@@ -3,6 +3,7 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Threading;
 using LlmTornado.Code;
 using LlmTornado.Images.Models;
 using LlmTornado.Images.Models.OpenAi;
@@ -222,6 +223,12 @@ public class ImageGenerationRequest
 	/// </summary>
 	[JsonIgnore]
 	public ImageGenerationRequestVendorExtensions? VendorExtensions { get; set; }
+
+	/// <summary>
+	///		Cancellation token to use with the request.
+	/// </summary>
+	[JsonIgnore]
+	public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
 	
 	[JsonIgnore]
 	internal string? UrlOverride { get; set; }
@@ -253,6 +260,7 @@ public class ImageGenerationRequest
 		Quality = basedOn.Quality;
 		Style = basedOn.Style;
 		VendorExtensions = basedOn.VendorExtensions;
+		CancellationToken = basedOn.CancellationToken;
 		UrlOverride = basedOn.UrlOverride;
 	}
 	

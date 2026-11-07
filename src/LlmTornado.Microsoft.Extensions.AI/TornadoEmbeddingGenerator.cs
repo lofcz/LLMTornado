@@ -75,35 +75,17 @@ public sealed class TornadoEmbeddingGenerator : IEmbeddingGenerator<string, Embe
 
             activity?.SetTag("llm.embedding.dimensions", dimensions);
 
-            // Create request
-            EmbeddingResult? result;
-
+            // Create request. A single string stays a scalar input; a list stays a vector.
+            EmbeddingRequest request = valuesList.Count == 1
+                ? new EmbeddingRequest(model, valuesList[0])
+                : new EmbeddingRequest(model, valuesList);
             if (dimensions.HasValue)
             {
-                if (valuesList.Count == 1)
-                {
-                    result = await _api.Embeddings.CreateEmbedding(model, valuesList[0], dimensions.Value);
-                }
-                else
-                {
-                    EmbeddingRequest request = new EmbeddingRequest(model, valuesList)
-                    {
-                        Dimensions = dimensions.Value
-                    };
-                    result = await _api.Embeddings.CreateEmbedding(request);
-                }
+                request.Dimensions = dimensions.Value;
             }
-            else
-            {
-                if (valuesList.Count == 1)
-                {
-                    result = await _api.Embeddings.CreateEmbedding(model, valuesList[0]);
-                }
-                else
-                {
-                    result = await _api.Embeddings.CreateEmbedding(model, valuesList);
-                }
-            }
+
+            request.CancellationToken = cancellationToken;
+            EmbeddingResult? result = await _api.Embeddings.CreateEmbedding(request);
 
             if (result?.Data == null)
             {

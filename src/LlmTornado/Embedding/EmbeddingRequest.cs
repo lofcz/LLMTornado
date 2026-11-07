@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Code;
@@ -257,6 +258,12 @@ public class EmbeddingRequest
 	
 	[JsonIgnore]
 	internal string? UrlOverride { get; set; }
+
+	/// <summary>
+	///		Cancellation token to use with the request.
+	/// </summary>
+	[JsonIgnore]
+	public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
 	
 	/// <summary>
 	///		Serializes the embedding request into the request body, based on the conventions used by the LLM provider.

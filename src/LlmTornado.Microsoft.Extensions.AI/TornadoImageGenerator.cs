@@ -50,6 +50,7 @@ public sealed class TornadoImageGenerator : IImageGenerator
         try
         {
             Images.ImageGenerationRequest tornadoRequest = request.ToLlmTornado(model, options);
+            tornadoRequest.CancellationToken = cancellationToken;
             ImageGenerationResult? result = await _api.ImageGenerations.CreateImage(tornadoRequest);
 
             if (result == null)

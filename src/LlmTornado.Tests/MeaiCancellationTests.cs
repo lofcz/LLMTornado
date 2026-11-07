@@ -46,10 +46,48 @@ public class MeaiCancellationTests
         Assert.That(watch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(5)));
     }
 
+    [Test]
+    public void GenerateEmbeddingAsync_AbortsTheRequestWhenTheTokenIsCanceled()
+    {
+        using SlowServer server = new SlowServer(ServerDelay);
+        IEmbeddingGenerator<string, Embedding<float>> generator = CreateEmbeddingGenerator(server.Port);
+        using CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+
+        Stopwatch watch = Stopwatch.StartNew();
+
+        Assert.CatchAsync<OperationCanceledException>(async () => await generator.GenerateAsync(["hello"], cancellationToken: cts.Token));
+        Assert.That(watch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(5)));
+    }
+
+    [Test]
+    public void GenerateImageAsync_AbortsTheRequestWhenTheTokenIsCanceled()
+    {
+        using SlowServer server = new SlowServer(ServerDelay);
+        IImageGenerator generator = CreateImageGenerator(server.Port);
+        using CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+
+        Stopwatch watch = Stopwatch.StartNew();
+
+        Assert.CatchAsync<OperationCanceledException>(async () => await generator.GenerateAsync(new ImageGenerationRequest("a red fox"), cancellationToken: cts.Token));
+        Assert.That(watch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(5)));
+    }
+
     private static IChatClient CreateClient(int port)
     {
         TornadoApi api = new TornadoApi(new Uri($"http://127.0.0.1:{port}/v1"), "test-key", LLmProviders.OpenAi);
         return api.AsChatClient(new ChatModel("gpt-test", LLmProviders.OpenAi));
+    }
+
+    private static IEmbeddingGenerator<string, Embedding<float>> CreateEmbeddingGenerator(int port)
+    {
+        TornadoApi api = new TornadoApi(new Uri($"http://127.0.0.1:{port}/v1"), "test-key", LLmProviders.OpenAi);
+        return api.AsEmbeddingGenerator("text-embedding-3-small");
+    }
+
+    private static IImageGenerator CreateImageGenerator(int port)
+    {
+        TornadoApi api = new TornadoApi(new Uri($"http://127.0.0.1:{port}/v1"), "test-key", LLmProviders.OpenAi);
+        return api.AsImageGenerator("dall-e-3");
     }
 
     private static List<global::Microsoft.Extensions.AI.ChatMessage> Prompt() =>

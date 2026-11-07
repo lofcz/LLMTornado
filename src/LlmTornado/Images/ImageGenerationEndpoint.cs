@@ -45,6 +45,6 @@ public class ImageGenerationEndpoint : EndpointBase
 	    IEndpointProvider provider = Api.GetProvider(request.Model ?? ImageModelOpenAiGpt.Default);
 	    TornadoRequestContent requestBody = request.Serialize(provider);
 	    
-        return HttpPost1<ImageGenerationResult>(provider, Endpoint, requestBody.Url, postData: requestBody.Body);
+        return HttpPost1<ImageGenerationResult>(provider, Endpoint, requestBody.Url, postData: requestBody.Body, ct: request.CancellationToken);
     }
 }
