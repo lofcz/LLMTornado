@@ -102,10 +102,16 @@ internal class VendorVoyageEmbeddingRequest
                             content.Type = "image_base64";
                             content.ImageBase64 = url;
                         }
-                        else
+                        else if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                         {
                             content.Type = "image_url";
                             content.ImageUrl = url;
+                        }
+                        else
+                        {
+                            // ChatImage.Url may hold raw base64; Voyage expects a data URI in image_base64
+                            content.Type = "image_base64";
+                            content.ImageBase64 = $"data:{part.Image.MimeType ?? "image/jpeg"};base64,{url}";
                         }
                     }
                     else if (part.Type == ChatMessageTypes.Video)
