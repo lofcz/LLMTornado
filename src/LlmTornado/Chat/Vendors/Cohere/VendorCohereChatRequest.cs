@@ -149,7 +149,12 @@ internal class VendorCohereChatRequest
                                 {
                                     ImageUrl = new VendorCohereImageUrl
                                     {
-                                        Url = p.Image!.Url,
+                                        Url = !string.IsNullOrWhiteSpace(p.Image!.MimeType) &&
+                                              !p.Image.Url.StartsWith("data:", StringComparison.OrdinalIgnoreCase) &&
+                                              !p.Image.Url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                                              !p.Image.Url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                                            ? $"data:{p.Image.MimeType};base64,{p.Image.Url}"
+                                            : p.Image.Url,
                                         Detail = p.Image!.Detail switch
                                         {
                                             ImageDetail.Auto => "auto",
