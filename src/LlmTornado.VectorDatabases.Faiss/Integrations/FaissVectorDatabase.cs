@@ -204,7 +204,8 @@ public class FaissVectorDatabase : IVectorDatabase
 
     public Task DeleteAllDocumentsAsync()
     {
-        throw new NotImplementedException();
+        ThrowIfCollectionNotInitialized();
+        return CollectionClient!.DeleteAllAsync();
     }
 
     public VectorDocument[] QueryByEmbedding(float[] embedding, TornadoWhereOperator? where = null, int topK = 5, bool includeScore = true)
