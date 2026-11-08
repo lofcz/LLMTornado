@@ -397,6 +397,20 @@ public class FaissCollectionClient : IDisposable
         }
     }
 
+    /// <summary>
+    /// Deletes all entries while preserving the collection.
+    /// </summary>
+    public Task DeleteAllAsync()
+    {
+        lock (_lock)
+        {
+            _index?.Dispose();
+            InitializeNewIndex();
+            SaveIndex();
+            return Task.CompletedTask;
+        }
+    }
+
     private void RebuildIndex()
     {
         // Dispose old index
