@@ -201,6 +201,6 @@ public class EmbeddingEndpoint : EndpointBase
     {
 	    IEndpointProvider provider = Api.GetProvider(request.Model);
 	    TornadoRequestContent requestBody = request.Serialize(provider);
-        return await HttpPost1<EmbeddingResult>(provider, Endpoint, requestBody.Url, requestBody.Body);
+        return await HttpPost1<EmbeddingResult>(provider, Endpoint, requestBody.Url, requestBody.Body, ct: request.CancellationToken);
     }
 }
