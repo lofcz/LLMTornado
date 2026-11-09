@@ -1356,7 +1356,17 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 		                        writer.WriteStartObject();
 
 		                        writer.WritePropertyName("url");
-		                        writer.WriteValue(part.Image?.Url);
+		                        string? imageUrl = part.Image?.Url;
+
+		                        if (request?.Model?.Provider is not LLmProviders.Zai && !string.IsNullOrWhiteSpace(part.Image?.MimeType) && !string.IsNullOrEmpty(imageUrl) &&
+		                            !imageUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase) &&
+		                            !imageUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+		                            !imageUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+		                        {
+			                        imageUrl = $"data:{part.Image.MimeType};base64,{imageUrl}";
+		                        }
+
+		                        writer.WriteValue(imageUrl);
 
 		                        if (part.Image?.Detail is not null)
 		                        {
