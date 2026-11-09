@@ -1,5 +1,6 @@
 using Npgsql;
 using System.Text.Json;
+using System.Globalization;
 using System.Text;
 
 namespace LlmTornado.VectorDatabases.PgVector;
@@ -106,7 +107,7 @@ public class PgVectorCollectionClient
 
         string sql = BuildQuerySql(_client.GetSchema(), GetTableName(), whereMetadata);
         await using NpgsqlCommand cmd = new NpgsqlCommand(sql, connection);
-        cmd.Parameters.AddWithValue("embedding", $"[{string.Join(",", queryEmbedding)}]");
+        cmd.Parameters.AddWithValue("embedding", FormatVector(queryEmbedding));
         cmd.Parameters.AddWithValue("limit", topK);
 
         List<PgVectorEntry> entries = [];
@@ -165,7 +166,7 @@ public class PgVectorCollectionClient
                 cmd.Parameters.AddWithValue("metadata", metadataJson);
                 
                 string? embeddingStr = embeddings != null && i < embeddings.Count 
-                    ? $"[{string.Join(",", embeddings[i])}]" 
+                    ? FormatVector(embeddings[i]) 
                     : null;
                 cmd.Parameters.AddWithValue("embedding", embeddingStr != null ? (object)embeddingStr : DBNull.Value);
 
@@ -215,7 +216,7 @@ public class PgVectorCollectionClient
                 if (embeddings != null && i < embeddings.Count)
                 {
                     setParts.Add("embedding = @embedding::vector");
-                    cmd.Parameters.AddWithValue("embedding", $"[{string.Join(",", embeddings[i])}]");
+                    cmd.Parameters.AddWithValue("embedding", FormatVector(embeddings[i]));
                 }
 
                 if (setParts.Count > 0)
@@ -279,7 +280,7 @@ public class PgVectorCollectionClient
                 cmd.Parameters.AddWithValue("metadata", metadataJson);
                 
                 string? embeddingStr = embeddings != null && i < embeddings.Count 
-                    ? $"[{string.Join(",", embeddings[i])}]" 
+                    ? FormatVector(embeddings[i]) 
                     : null;
                 cmd.Parameters.AddWithValue("embedding", embeddingStr != null ? (object)embeddingStr : DBNull.Value);
 
@@ -387,16 +388,26 @@ public class PgVectorCollectionClient
         return string.Join(" AND ", conditions);
     }
 
+    private static string FormatVector(IEnumerable<float> vector)
+    {
+        return $"[{string.Join(",", vector.Select(v => v.ToString("R", CultureInfo.InvariantCulture)))}]";
+    }
+
+    private static string FormatNumber(object value)
+    {
+        return value is IFormattable f ? f.ToString(null, CultureInfo.InvariantCulture) : value.ToString() ?? "";
+    }
+
     private static string? BuildCondition(string key, string op, object value)
     {
         return op switch
         {
             "$eq" => $"metadata->'{key}' = '{JsonSerializer.Serialize(value)}'",
             "$ne" => $"metadata->'{key}' != '{JsonSerializer.Serialize(value)}'",
-            "$gt" => $"(metadata->'{key}')::numeric > {value}",
-            "$gte" => $"(metadata->'{key}')::numeric >= {value}",
-            "$lt" => $"(metadata->'{key}')::numeric < {value}",
-            "$lte" => $"(metadata->'{key}')::numeric <= {value}",
+            "$gt" => $"(metadata->'{key}')::numeric > {FormatNumber(value)}",
+            "$gte" => $"(metadata->'{key}')::numeric >= {FormatNumber(value)}",
+            "$lt" => $"(metadata->'{key}')::numeric < {FormatNumber(value)}",
+            "$lte" => $"(metadata->'{key}')::numeric <= {FormatNumber(value)}",
             "$in" => value is Array arr 
                 ? $"metadata->'{key}' IN ({string.Join(",", arr.Cast<object>().Select(v => $"'{JsonSerializer.Serialize(v)}'"))})" 
                 : null,
