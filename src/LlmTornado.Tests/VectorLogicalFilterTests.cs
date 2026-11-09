@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using LlmTornado.VectorDatabases;
@@ -75,6 +76,27 @@ public class VectorLogicalFilterTests
         string sql = (string)method.Invoke(client, ["public", "docs_vectors", null])!;
 
         Assert.That(sql, Does.Contain("ORDER BY distance asc").And.Contain("LIMIT @limit"));
+    }
+
+    [Test]
+    public void PgVector_VectorAndNumericFilter_IgnoreCurrentCulture()
+    {
+        CultureInfo previous = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = new CultureInfo("de-DE");
+
+        try
+        {
+            MethodInfo format = typeof(PgVectorCollectionClient).GetMethod("FormatVector", BindingFlags.NonPublic | BindingFlags.Static)!;
+            string vector = (string)format.Invoke(null, [new float[] { 0.5f, -1.25f, 3f }])!;
+            string sql = PgVectorFilter(TornadoWhereOperator.GreaterThan("price", 1.5));
+
+            Assert.That(vector, Is.EqualTo("[0.5,-1.25,3]"));
+            Assert.That(sql, Does.Contain("> 1.5"));
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previous;
+        }
     }
 
     private static bool FaissMatches(Dictionary<string, object> metadata, TornadoWhereOperator where)
