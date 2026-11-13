@@ -39,6 +39,7 @@ public class CompactionEndpoint : EndpointBase
     {
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.Anthropic.Claude46.Sonnet);
         TornadoRequestContent requestBody = request.Serialize(provider);
-        return await HttpPost<CompactionResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.Model, request, ct).ConfigureAwait(false);
+        using CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(ct, request.CancellationToken);
+        return await HttpPost<CompactionResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.Model, request, linked.Token).ConfigureAwait(false);
     }
 }
