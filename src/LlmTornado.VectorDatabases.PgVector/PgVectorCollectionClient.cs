@@ -400,6 +400,14 @@ public class PgVectorCollectionClient
             return f.ToString(null, CultureInfo.InvariantCulture);
         }
 
+        if (value is string str)
+        {
+            if (double.TryParse(str, NumberStyles.Float, CultureInfo.InvariantCulture, out double d) && double.IsFinite(d))
+            {
+                return d.ToString("R", CultureInfo.InvariantCulture);
+            }
+        }
+
         throw new ArgumentException($"Numeric metadata comparison requires a numeric value, got {value?.GetType().Name ?? "null"}.", nameof(value));
     }
 

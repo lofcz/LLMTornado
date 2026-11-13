@@ -122,6 +122,13 @@ public class VectorLogicalFilterTests
         Assert.That(ex!.InnerException, Is.TypeOf<ArgumentException>());
     }
 
+    [Test]
+    public void PgVector_NumericComparison_AcceptsNumericStrings()
+    {
+        string sql = PgVectorFilter(TornadoWhereOperator.GreaterThan("price", "5"));
+        Assert.That(sql, Does.Contain("::numeric > 5"));
+    }
+
     private static bool FaissMatches(Dictionary<string, object> metadata, TornadoWhereOperator where)
     {
         // MatchesFilter does not touch the index, so skip the native FAISS setup.
