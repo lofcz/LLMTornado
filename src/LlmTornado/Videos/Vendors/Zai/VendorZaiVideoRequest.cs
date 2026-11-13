@@ -116,24 +116,24 @@ internal class VendorZaiVideoGenerationRequest
             List<string> imageUrls = [];
             foreach (VideoReferenceImage refImage in request.ReferenceImages)
             {
-                imageUrls.Add(refImage.Image.Url);
+                imageUrls.Add(refImage.Image.AsProviderImageUrl());
             }
             zaiRequest.ImageUrl = imageUrls;
         }
         else if (isStartEnd && request.Image is not null && request.LastFrame is not null)
         {
             // First/last frame mode: array of 2 images
-            zaiRequest.ImageUrl = new List<string> { request.Image.Url, request.LastFrame.Url };
+            zaiRequest.ImageUrl = new List<string> { request.Image.AsProviderImageUrl(), request.LastFrame.AsProviderImageUrl() };
         }
         else if (isCogVideoX && request.Image is not null && request.LastFrame is not null)
         {
             // CogVideoX also supports first/last frame mode
-            zaiRequest.ImageUrl = new List<string> { request.Image.Url, request.LastFrame.Url };
+            zaiRequest.ImageUrl = new List<string> { request.Image.AsProviderImageUrl(), request.LastFrame.AsProviderImageUrl() };
         }
         else if (request.Image is not null)
         {
             // Single image for image-to-video
-            zaiRequest.ImageUrl = request.Image.Url;
+            zaiRequest.ImageUrl = request.Image.AsProviderImageUrl();
         }
         
         // Duration

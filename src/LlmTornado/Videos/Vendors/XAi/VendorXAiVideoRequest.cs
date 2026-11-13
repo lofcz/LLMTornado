@@ -118,7 +118,7 @@ internal class VendorXAiVideoGenerationRequest
         {
             xaiRequest.Image = new VendorXAiVideoImage
             {
-                Url = request.Image.Url
+                Url = request.Image.AsProviderImageUrl()
             };
         }
 
@@ -126,7 +126,7 @@ internal class VendorXAiVideoGenerationRequest
         {
             xaiRequest.ReferenceImages = request.ReferenceImages
                 .Where(x => x.Image is not null)
-                .Select(x => new VendorXAiVideoImage { Url = x.Image.Url })
+                .Select(x => new VendorXAiVideoImage { Url = x.Image.AsProviderImageUrl() })
                 .ToList();
         }
         
