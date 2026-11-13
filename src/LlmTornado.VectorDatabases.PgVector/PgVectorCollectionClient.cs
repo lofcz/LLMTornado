@@ -381,7 +381,7 @@ public class PgVectorCollectionClient
             else
             {
                 // Direct equality
-                conditions.Add($"metadata->'{key}' = '\"{value}\"'");
+                conditions.Add($"metadata->'{EscapeLiteral(key)}' = '{EscapeLiteral(JsonSerializer.Serialize(value?.ToString()))}'");
             }
         }
 
@@ -395,24 +395,40 @@ public class PgVectorCollectionClient
 
     private static string FormatNumber(object value)
     {
-        return value is IFormattable f ? f.ToString(null, CultureInfo.InvariantCulture) : value.ToString() ?? "";
+        if (value is IFormattable f && value is sbyte or byte or short or ushort or int or uint or long or ulong or float or double or decimal)
+        {
+            return f.ToString(null, CultureInfo.InvariantCulture);
+        }
+
+        throw new ArgumentException($"Numeric metadata comparison requires a numeric value, got {value?.GetType().Name ?? "null"}.", nameof(value));
+    }
+
+    private static string EscapeLiteral(string value)
+    {
+        return value.Replace("'", "''");
+    }
+
+    private static string JsonLiteral(object value)
+    {
+        return $"'{EscapeLiteral(JsonSerializer.Serialize(value))}'";
     }
 
     private static string? BuildCondition(string key, string op, object value)
     {
+        string k = EscapeLiteral(key);
         return op switch
         {
-            "$eq" => $"metadata->'{key}' = '{JsonSerializer.Serialize(value)}'",
-            "$ne" => $"metadata->'{key}' != '{JsonSerializer.Serialize(value)}'",
-            "$gt" => $"(metadata->'{key}')::numeric > {FormatNumber(value)}",
-            "$gte" => $"(metadata->'{key}')::numeric >= {FormatNumber(value)}",
-            "$lt" => $"(metadata->'{key}')::numeric < {FormatNumber(value)}",
-            "$lte" => $"(metadata->'{key}')::numeric <= {FormatNumber(value)}",
+            "$eq" => $"metadata->'{k}' = {JsonLiteral(value)}",
+            "$ne" => $"metadata->'{k}' != {JsonLiteral(value)}",
+            "$gt" => $"(metadata->'{k}')::numeric > {FormatNumber(value)}",
+            "$gte" => $"(metadata->'{k}')::numeric >= {FormatNumber(value)}",
+            "$lt" => $"(metadata->'{k}')::numeric < {FormatNumber(value)}",
+            "$lte" => $"(metadata->'{k}')::numeric <= {FormatNumber(value)}",
             "$in" => value is Array arr 
-                ? $"metadata->'{key}' IN ({string.Join(",", arr.Cast<object>().Select(v => $"'{JsonSerializer.Serialize(v)}'"))})" 
+                ? $"metadata->'{k}' IN ({string.Join(",", arr.Cast<object>().Select(v => JsonLiteral(v)))})" 
                 : null,
             "$nin" => value is Array arr2 
-                ? $"metadata->'{key}' NOT IN ({string.Join(",", arr2.Cast<object>().Select(v => $"'{JsonSerializer.Serialize(v)}'"))})" 
+                ? $"metadata->'{k}' NOT IN ({string.Join(",", arr2.Cast<object>().Select(v => JsonLiteral(v)))})" 
                 : null,
             _ => null
         };
