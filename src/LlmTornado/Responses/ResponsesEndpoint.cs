@@ -376,7 +376,8 @@ public class ResponsesEndpoint : EndpointBase
     {
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt56.V56Terra);
         TornadoRequestContent requestBody = request.Serialize(provider);
-        return await HttpPost<ResponseInputTokensResult>(provider, Endpoint, url: GetUrl(provider, "/input_tokens"), postData: requestBody.Body, model: request.Model, requestObj: request, ct: cancellationToken).ConfigureAwait(false);
+        using CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, request.CancellationToken);
+        return await HttpPost<ResponseInputTokensResult>(provider, Endpoint, url: GetUrl(provider, "/input_tokens"), postData: requestBody.Body, model: request.Model, requestObj: request, ct: linked.Token).ConfigureAwait(false);
     }
 
     /// <summary>
