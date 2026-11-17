@@ -99,6 +99,36 @@ public class VectorLogicalFilterTests
         }
     }
 
+    [Test]
+    public void PgVector_StringValuesAndKeys_AreEscapedAsSqlLiterals()
+    {
+        string eq = PgVectorFilter(TornadoWhereOperator.Equal("title", "O'Brien' OR '1'='1"));
+        string ne = PgVectorFilter(TornadoWhereOperator.NotEqual("title", "it's"));
+        string inList = PgVectorFilter(TornadoWhereOperator.In("tag", "a'b", "c"));
+        string key = PgVectorFilter(TornadoWhereOperator.Equal("k'ey", "v"));
+        string direct = PgVectorFilter(new Dictionary<string, object> { ["title"] = "x' OR '1'='1" });
+
+        Assert.That(eq, Does.Match("^metadata->'title' = '[^']*'$"));
+        Assert.That(ne, Does.Match("^metadata->'title' != '[^']*'$"));
+        Assert.That(inList, Does.Match("^metadata->'tag' IN \\('[^']*','[^']*'\\)$"));
+        Assert.That(key, Is.EqualTo("metadata->'k''ey' = '\"v\"'"));
+        Assert.That(direct, Does.Match("^metadata->'title' = '[^']*'$"));
+    }
+
+    [Test]
+    public void PgVector_NumericComparison_RejectsNonNumericValues()
+    {
+        TargetInvocationException? ex = Assert.Throws<TargetInvocationException>(() => PgVectorFilter(TornadoWhereOperator.GreaterThan("price", "1; DROP TABLE x")));
+        Assert.That(ex!.InnerException, Is.TypeOf<ArgumentException>());
+    }
+
+    [Test]
+    public void PgVector_NumericComparison_AcceptsNumericStrings()
+    {
+        string sql = PgVectorFilter(TornadoWhereOperator.GreaterThan("price", "5"));
+        Assert.That(sql, Does.Contain("::numeric > 5"));
+    }
+
     private static bool FaissMatches(Dictionary<string, object> metadata, TornadoWhereOperator where)
     {
         // MatchesFilter does not touch the index, so skip the native FAISS setup.
@@ -107,9 +137,11 @@ public class VectorLogicalFilterTests
         return (bool)method.Invoke(client, [metadata, where.ToWhere()])!;
     }
 
-    private static string PgVectorFilter(TornadoWhereOperator where)
+    private static string PgVectorFilter(TornadoWhereOperator where) => PgVectorFilter(where.ToWhere());
+
+    private static string PgVectorFilter(Dictionary<string, object> where)
     {
         MethodInfo method = typeof(PgVectorCollectionClient).GetMethod("BuildMetadataFilter", BindingFlags.NonPublic | BindingFlags.Static)!;
-        return (string)method.Invoke(null, [where.ToWhere()])!;
+        return (string)method.Invoke(null, [where])!;
     }
 }
