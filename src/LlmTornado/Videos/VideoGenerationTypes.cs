@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
 
@@ -39,6 +40,28 @@ public class VideoImage
     /// </summary>
     [JsonProperty("mimeType")]
     public string? MimeType { get; set; }
+
+    /// <summary>
+    /// Image reference for providers that accept a public URL or a data URI.
+    /// HTTP(S) URLs and existing data URIs pass through. Raw base64 is wrapped as
+    /// <c>data:&lt;mime&gt;;base64,&lt;content&gt;</c> when <see cref="MimeType"/> is set.
+    /// </summary>
+    internal string AsProviderImageUrl()
+    {
+        if (string.IsNullOrEmpty(Url) || string.IsNullOrWhiteSpace(MimeType))
+        {
+            return Url;
+        }
+
+        if (Url.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
+            || Url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            || Url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return Url;
+        }
+
+        return $"data:{MimeType};base64,{Url}";
+    }
     
     /// <summary>
     /// Implicit conversion from string to VideoImage

@@ -82,12 +82,12 @@ internal class VendorMiniMaxVideoGenerationRequest
         // Handle image input for image-to-video
         if (request.Image is not null)
         {
-            miniMaxRequest.FirstFrameImage = request.Image.Url;
+            miniMaxRequest.FirstFrameImage = request.Image.AsProviderImageUrl();
         }
 
         if (request.LastFrame is not null)
         {
-            miniMaxRequest.LastFrameImage = request.LastFrame.Url;
+            miniMaxRequest.LastFrameImage = request.LastFrame.AsProviderImageUrl();
         }
         
         // Duration
@@ -353,7 +353,7 @@ internal class VendorMiniMaxVideoGenerationV2Request
                     v2.Content.Add(new VendorMiniMaxVideoContentItem
                     {
                         Type = "image_url",
-                        ImageUrl = new VendorMiniMaxVideoMediaUrl { Url = reference.Image.Url },
+                        ImageUrl = new VendorMiniMaxVideoMediaUrl { Url = reference.Image.AsProviderImageUrl() },
                         Role = "reference_image"
                     });
                 }
@@ -402,7 +402,7 @@ internal class VendorMiniMaxVideoGenerationV2Request
                 v2.Content.Add(new VendorMiniMaxVideoContentItem
                 {
                     Type = "image_url",
-                    ImageUrl = new VendorMiniMaxVideoMediaUrl { Url = request.Image.Url },
+                    ImageUrl = new VendorMiniMaxVideoMediaUrl { Url = request.Image.AsProviderImageUrl() },
                     Role = "first_frame"
                 });
             }
@@ -412,7 +412,7 @@ internal class VendorMiniMaxVideoGenerationV2Request
                 v2.Content.Add(new VendorMiniMaxVideoContentItem
                 {
                     Type = "image_url",
-                    ImageUrl = new VendorMiniMaxVideoMediaUrl { Url = request.LastFrame.Url },
+                    ImageUrl = new VendorMiniMaxVideoMediaUrl { Url = request.LastFrame.AsProviderImageUrl() },
                     Role = "last_frame"
                 });
             }
