@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
@@ -843,7 +844,7 @@ internal class VendorGoogleChatRequest
         {
             if (value.HasValue)
             {
-                writer.WriteValue($"{value.Value.TotalSeconds}s");
+                writer.WriteValue($"{value.Value.TotalSeconds.ToString(CultureInfo.InvariantCulture)}s");
             }
             else
             {
@@ -859,7 +860,7 @@ internal class VendorGoogleChatRequest
                 
                 if (s is not null && s.EndsWith('s'))
                 {
-                    if (double.TryParse(s[..^1], out double seconds))
+                    if (double.TryParse(s[..^1], NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds))
                     {
                         return TimeSpan.FromSeconds(seconds);
                     }
