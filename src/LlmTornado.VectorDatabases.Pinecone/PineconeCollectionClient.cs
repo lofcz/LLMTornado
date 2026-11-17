@@ -36,6 +36,48 @@ public class PineconeCollectionClient
     }
 
     /// <summary>
+    /// Metadata key holding the document text of a vector upserted without integrated embedding.
+    /// </summary>
+    private const string DocumentMetadataKey = "_document";
+
+    // A plain vector has no record field, so the document text travels in the metadata under a reserved key
+    private static Metadata BuildVectorMetadata(Dictionary<string, object> metadata, string? document)
+    {
+        Metadata result = new Metadata();
+
+        foreach (KeyValuePair<string, object> kvp in metadata)
+        {
+            result[kvp.Key] = ConvertToMetadataValue(kvp.Value);
+        }
+
+        if (!string.IsNullOrEmpty(document))
+        {
+            result[DocumentMetadataKey] = document;
+        }
+
+        return result;
+    }
+
+    // Reads the document from the record field (integrated embedding) or from the reserved key, which is not user metadata and is removed
+    private static string? ExtractDocument(Dictionary<string, object> metadata, string? recordField)
+    {
+        string? document = null;
+
+        if (metadata.TryGetValue(DocumentMetadataKey, out object? stored))
+        {
+            document = stored?.ToString();
+            metadata.Remove(DocumentMetadataKey);
+        }
+
+        if (recordField != null && metadata.TryGetValue(recordField, out object? docValue))
+        {
+            document = docValue?.ToString();
+        }
+
+        return document;
+    }
+
+    /// <summary>
     /// Creates a new PineconeCollectionClient instance.
     /// </summary>
     /// <param name="collection">The collection (namespace) information</param>
@@ -292,13 +334,8 @@ public class PineconeCollectionClient
         
         for (int i = 0; i < ids.Count; i++)
         {
-            Metadata metadata = new Metadata();
-            
-            // Add user-provided metadata only
-            foreach (KeyValuePair<string, object> kvp in metadatas[i])
-            {
-                metadata[kvp.Key] = ConvertToMetadataValue(kvp.Value);
-            }
+            // User-provided metadata plus the document text, so it can be read back
+            Metadata metadata = BuildVectorMetadata(metadatas[i], documents[i]);
 
             vectors.Add(new Vector
             {
@@ -365,13 +402,9 @@ public class PineconeCollectionClient
                 }
             }
             
-            // Try to get document from the record field if integrated embedding is used
-            string? document = null;
+            // Document comes from the record field if integrated embedding is used, otherwise from the reserved metadata key
             string? recordField = await _vectorClient.GetRecordFieldNameAsync();
-            if (recordField != null && metadata.TryGetValue(recordField, out object? docValue))
-            {
-                document = docValue?.ToString();
-            }
+            string? document = ExtractDocument(metadata, recordField);
 
             float[]? embedding = null;
             if (vector.Values.HasValue)
@@ -435,13 +468,9 @@ public class PineconeCollectionClient
                 }
             }
             
-            // Try to get document from the record field if integrated embedding is used
-            string? document = null;
+            // Document comes from the record field if integrated embedding is used, otherwise from the reserved metadata key
             string? recordField = await _vectorClient.GetRecordFieldNameAsync();
-            if (recordField != null && metadata.TryGetValue(recordField, out object? docValue))
-            {
-                document = docValue?.ToString();
-            }
+            string? document = ExtractDocument(metadata, recordField);
 
             float[]? embedding = null;
             if (match.Values is { Length: > 0 })
