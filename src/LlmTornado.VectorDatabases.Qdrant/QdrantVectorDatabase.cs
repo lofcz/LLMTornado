@@ -489,24 +489,13 @@ public class QdrantVectorDatabase : IVectorDatabase
                         case "$in":
                             if (op.Value is object[] { Length: > 0 } values)
                             {
-                                condition = values[0] switch
-                                {
-                                    // Try to match strings or integers
-                                    string => Match(kvp.Key, values.Select(v => v.ToString() ?? string.Empty).ToList()),
-                                    int or long => Match(kvp.Key, values.Select(Convert.ToInt64).ToList()),
-                                    _ => condition
-                                };
+                                condition = ConvertMatchAny(kvp.Key, values, "$in");
                             }
                             break;
                         case "$nin":
                             if (op.Value is object[] { Length: > 0 } excluded)
                             {
-                                condition = excluded[0] switch
-                                {
-                                    string => Negate(Match(kvp.Key, excluded.Select(v => v.ToString() ?? string.Empty).ToList())),
-                                    int or long => Negate(Match(kvp.Key, excluded.Select(Convert.ToInt64).ToList())),
-                                    _ => condition
-                                };
+                                condition = Negate(ConvertMatchAny(kvp.Key, excluded, "$nin"));
                             }
                             break;
                     }
@@ -520,6 +509,24 @@ public class QdrantVectorDatabase : IVectorDatabase
         }
 
         return conditions;
+    }
+
+    /// <summary>
+    /// Builds a match-any condition for <c>$in</c>/<c>$nin</c>. Qdrant only matches keyword and integer lists, so other value types throw instead of silently dropping the filter.
+    /// </summary>
+    private static Condition ConvertMatchAny(string key, object[] values, string op)
+    {
+        if (values.All(v => v is string))
+        {
+            return Match(key, values.Select(v => (string)v).ToList());
+        }
+
+        if (values.All(v => v is sbyte or byte or short or ushort or int or uint or long))
+        {
+            return Match(key, values.Select(Convert.ToInt64).ToList());
+        }
+
+        throw new NotSupportedException($"Qdrant {op} filters only support lists of strings or integers, got values of type(s): {string.Join(", ", values.Select(v => v?.GetType().Name ?? "null").Distinct())}.");
     }
 
     /// <summary>
