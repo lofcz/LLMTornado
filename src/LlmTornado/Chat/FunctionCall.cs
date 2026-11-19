@@ -283,7 +283,7 @@ public class FunctionCall
             }
             else
             {
-                Result = new FunctionResult(this, invocationResult.Result as string ?? invocationResult.ToJson(), FunctionResultSetContentModes.Passthrough);    
+                Result = new FunctionResult(this, invocationResult.Result as string ?? invocationResult.Result.ToJson(), FunctionResultSetContentModes.Passthrough);    
             }
         }
 

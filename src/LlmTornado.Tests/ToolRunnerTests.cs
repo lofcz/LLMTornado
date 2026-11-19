@@ -21,6 +21,12 @@ public class ToolRunnerTests
 {
     #region Test Tools - Simulating Real Tool Signatures
 
+    [Description("Returns a non-string object")]
+    public static object GetTemperature()
+    {
+        return new { temperature = 21 };
+    }
+
     /// <summary>
     /// Tool with no parameters - like MCP's list_allowed_directories
     /// </summary>
@@ -117,6 +123,22 @@ public class ToolRunnerTests
         string input = "{\"query\":\"test\"}";
         string result = ToolRunner.NormalizeArguments(input);
         Assert.That(result, Is.EqualTo(input));
+    }
+
+    #endregion
+
+    #region Non-string delegate results
+
+    [Test]
+    public async Task CallFuncToolAsync_ObjectResult_ContentIsDelegateValueWithoutWrapper()
+    {
+        TornadoAgent agent = CreateTestAgent(GetTemperature);
+        FunctionCall call = CreateFunctionCall("GetTemperature", null, agent);
+
+        FunctionResult result = await ToolRunner.CallFuncToolAsync(agent, call);
+
+        Assert.That(result.InvocationSucceeded, Is.True);
+        Assert.That(result.Content, Is.EqualTo("{\"temperature\":21}"));
     }
 
     #endregion
