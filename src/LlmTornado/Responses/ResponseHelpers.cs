@@ -139,9 +139,20 @@ internal static class ResponseHelpers
                                     case ChatMessageTypes.Image:
                                         if (part.Image is not null)
                                         {
+                                            string? imageUrl = part.Image.Url;
+
+                                            // raw base64 + MimeType must be sent as a data URI, otherwise the API rejects it (same as Chat Completions)
+                                            if (!string.IsNullOrWhiteSpace(part.Image.MimeType) && !string.IsNullOrEmpty(imageUrl) &&
+                                                !imageUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase) &&
+                                                !imageUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                                                !imageUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                imageUrl = $"data:{part.Image.MimeType};base64,{imageUrl}";
+                                            }
+
                                             inputMessage.Content.Add(new ResponseInputContentImage
                                             {
-                                                ImageUrl = part.Image.Url,
+                                                ImageUrl = imageUrl,
                                                 Detail = part.Image.Detail
                                             });
                                         }
