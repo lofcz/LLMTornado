@@ -76,7 +76,71 @@ public class FaissCollectionClient : IDisposable
     /// </summary>
     private static FaissMetadataFile? ReadMetadata(string json)
     {
-        return JsonSerializer.Deserialize<FaissMetadataFile>(json);
+        FaissMetadataFile? data = JsonSerializer.Deserialize<FaissMetadataFile>(json);
+
+        if (data?.Entries != null)
+        {
+            foreach (FaissEntry entry in data.Entries.Values)
+            {
+                if (entry.Metadata == null)
+                {
+                    continue;
+                }
+
+                foreach (string key in entry.Metadata.Keys.ToList())
+                {
+                    entry.Metadata[key] = NormalizeJsonValue(entry.Metadata[key]);
+                }
+            }
+        }
+
+        return data;
+    }
+
+    /// <summary>
+    /// Converts a <see cref="JsonElement"/> produced by deserializing an object-typed value into the CLR type the
+    /// value had when it was added (string, long, double, bool), so filters behave the same before and after a reload.
+    /// </summary>
+    private static object NormalizeJsonValue(object value)
+    {
+        if (value is not JsonElement element)
+        {
+            return value;
+        }
+
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.String:
+                return element.GetString() ?? string.Empty;
+            case JsonValueKind.True:
+                return true;
+            case JsonValueKind.False:
+                return false;
+            case JsonValueKind.Number:
+                return element.TryGetInt64(out long l) ? l : element.GetDouble();
+            default:
+                return element;
+        }
+    }
+
+    private static bool ValuesEqual(object? a, object? b)
+    {
+        if (a == null || b == null)
+        {
+            return a == null && b == null;
+        }
+
+        if (IsNumeric(a) && IsNumeric(b))
+        {
+            return Convert.ToDouble(a) == Convert.ToDouble(b);
+        }
+
+        return a.Equals(b);
+    }
+
+    private static bool IsNumeric(object value)
+    {
+        return value is sbyte or byte or short or ushort or int or uint or long or ulong or float or double or decimal;
     }
 
     private sealed class FaissMetadataFile
@@ -502,7 +566,7 @@ public class FaissCollectionClient : IDisposable
             else
             {
                 // Direct equality
-                if (!metadataValue.Equals(filterValue))
+                if (!ValuesEqual(metadataValue, filterValue))
                 {
                     return false;
                 }
@@ -519,9 +583,9 @@ public class FaissCollectionClient : IDisposable
             switch (op)
             {
                 case "$eq":
-                    return metadataValue.Equals(filterValue);
+                    return ValuesEqual(metadataValue, filterValue);
                 case "$ne":
-                    return !metadataValue.Equals(filterValue);
+                    return !ValuesEqual(metadataValue, filterValue);
                 case "$gt":
                     return Convert.ToDouble(metadataValue) > Convert.ToDouble(filterValue);
                 case "$gte":
@@ -533,13 +597,13 @@ public class FaissCollectionClient : IDisposable
                 case "$in":
                     if (filterValue is Array arr)
                     {
-                        return arr.Cast<object>().Contains(metadataValue);
+                        return arr.Cast<object>().Any(v => ValuesEqual(v, metadataValue));
                     }
                     return false;
                 case "$nin":
                     if (filterValue is Array arr2)
                     {
-                        return !arr2.Cast<object>().Contains(metadataValue);
+                        return !arr2.Cast<object>().Any(v => ValuesEqual(v, metadataValue));
                     }
                     return false;
                 default:
