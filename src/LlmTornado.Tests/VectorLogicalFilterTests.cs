@@ -64,6 +64,14 @@ public class VectorLogicalFilterTests
         Assert.That(sql, Does.StartWith("(((").And.Contain(" OR ").And.Contain(") AND ("));
     }
 
+    [Test]
+    public void PgVector_DirectEquality_KeepsTheJsonTypeOfTheValue()
+    {
+        Assert.That(PgVectorFilter(new Dictionary<string, object> { ["page"] = 3 }), Is.EqualTo("metadata->'page' = '3'"));
+        Assert.That(PgVectorFilter(new Dictionary<string, object> { ["draft"] = true }), Is.EqualTo("metadata->'draft' = 'true'"));
+        Assert.That(PgVectorFilter(new Dictionary<string, object> { ["category"] = "docs" }), Is.EqualTo("""metadata->'category' = '"docs"'"""));
+    }
+
     [TestCase(SimilarityMetric.Cosine)]
     [TestCase(SimilarityMetric.Euclidean)]
     [TestCase(SimilarityMetric.DotProduct)]

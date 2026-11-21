@@ -381,7 +381,7 @@ public class PgVectorCollectionClient
             else
             {
                 // Direct equality
-                conditions.Add($"metadata->'{EscapeLiteral(key)}' = '{EscapeLiteral(JsonSerializer.Serialize(value?.ToString()))}'");
+                conditions.Add($"metadata->'{EscapeLiteral(key)}' = {JsonLiteral(value)}");
             }
         }
 
