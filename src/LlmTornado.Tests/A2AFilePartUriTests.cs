@@ -1,6 +1,7 @@
 using A2A;
 using LlmTornado.A2A;
 using LlmTornado.Chat;
+using LlmTornado.Code;
 
 namespace LlmTornado.Tests;
 
@@ -56,5 +57,55 @@ public class A2AFilePartUriTests
         Assert.That(part.Image, Is.Null);
         Assert.That(part.FileLinkData!.FileUri, Is.EqualTo("https://example.com/a.pdf"));
         Assert.That(part.FileLinkData.MimeType, Is.EqualTo("application/pdf"));
+    }
+
+    [Test]
+    public void ChatImageWithRawBase64_DoesNotThrow_AndKeepsBytes()
+    {
+        ChatImage img = new("iVBORw0KGgo=") { MimeType = "image/png" };
+
+        FilePart part = img.ToA2AFilePart();
+
+        Assert.That(part.File, Is.InstanceOf<FileContent>());
+        Assert.That(part.File.Bytes, Is.EqualTo("iVBORw0KGgo="));
+        Assert.That(part.File.MimeType, Is.EqualTo("image/png"));
+    }
+
+    [Test]
+    public void ChatImageWithJpegBase64StartingWithSlash_KeepsBytes()
+    {
+        FilePart part = new ChatImage("/9j/4AAQSkZJRg==") { MimeType = "image/jpeg" }.ToA2AFilePart();
+
+        Assert.That(part.File.Uri, Is.Null);
+        Assert.That(part.File.Bytes, Is.EqualTo("/9j/4AAQSkZJRg=="));
+        Assert.That(part.File.MimeType, Is.EqualTo("image/jpeg"));
+    }
+
+    [Test]
+    public void ChatImageWithHttpUrl_KeepsUri()
+    {
+        FilePart part = new ChatImage("https://example.com/a.png").ToA2AFilePart();
+
+        Assert.That(part.File.Uri?.ToString(), Is.EqualTo("https://example.com/a.png"));
+    }
+
+    [Test]
+    public void ChatImageWithDataUri_KeepsUri_AndRoundTripsToImage()
+    {
+        const string dataUri = "data:image/jpeg;base64,/9j/4AAQSkZJRg==";
+        FilePart part = new ChatImage(dataUri) { MimeType = "image/jpeg" }.ToA2AFilePart();
+
+        Assert.That(part.File.Uri, Is.Not.Null);
+        Assert.That(part.File.Bytes, Is.Null);
+        Assert.That(part.ToTornadoMessagePart()!.Type, Is.EqualTo(ChatMessageTypes.Image));
+    }
+
+    [Test]
+    public void ChatImageWithGcsUri_KeepsUri()
+    {
+        FilePart part = new ChatImage("gs://bucket/img.png").ToA2AFilePart();
+
+        Assert.That(part.File.Bytes, Is.Null);
+        Assert.That(part.File.Uri?.ToString(), Is.EqualTo("gs://bucket/img.png"));
     }
 }
