@@ -298,7 +298,7 @@ internal static partial class Extensions
             
         if (t == typeof(int) && ((value?.ToString()?.Contains('.') ?? false) || (value?.ToString()?.Contains(',') ?? false)))
         {
-            if (double.TryParse(value.ToString()?.Replace(",", "."), out double x))
+            if (double.TryParse(value.ToString()?.Replace(",", "."), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double x))
             {
                 return (int)x;
             }
