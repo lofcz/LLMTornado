@@ -225,8 +225,23 @@ public class FaissCollectionClient : IDisposable
                 return new List<FaissEntry>();
             }
 
-            // Search in FAISS
-            var (distances, labels) = _index.Search(new[] { queryEmbedding }, topK);
+            // A where clause is applied after the search. Asking only for topK
+            // neighbors drops matches that sit outside that window, so the caller
+            // gets fewer than topK hits (sometimes none). Flat search is already
+            // exhaustive: scan the whole index, keep the matches, return the nearest topK.
+            int searchK = topK;
+            if (whereMetadata != null)
+            {
+                if (topK <= 0)
+                {
+                    return new List<FaissEntry>();
+                }
+
+                long count = _index.Count;
+                searchK = count > int.MaxValue ? int.MaxValue : (int)count;
+            }
+
+            var (distances, labels) = _index.Search(new[] { queryEmbedding }, searchK);
             
             var entries = new List<FaissEntry>();
             for (int i = 0; i < labels[0].Length; i++)
@@ -249,6 +264,10 @@ public class FaissCollectionClient : IDisposable
                         distances[0][i]
                     );
                     entries.Add(resultEntry);
+                    if (whereMetadata != null && entries.Count >= topK)
+                    {
+                        break;
+                    }
                 }
             }
             
