@@ -22,13 +22,16 @@ public static partial class A2ATornadoExtension
         return doc.Uri != null ? new FilePart { File = new FileContent(doc.Uri) } : new FilePart { File = new FileContent(doc.Base64) };
     }
 
-    public static FilePart ToA2AFilePart(this ChatImage img) => new FilePart
+    public static FilePart ToA2AFilePart(this ChatImage img)
     {
-        File = new FileContent(new Uri(img.Url))
+        // ChatImage.Url may hold raw base64 (with MimeType); on Unix a JPEG ("/9j/...") even parses as an absolute file Uri, so a file Uri is only accepted when the value really starts with "file:"
+        if (Uri.TryCreate(img.Url, UriKind.Absolute, out Uri? uri) && (!uri.IsFile || img.Url.StartsWith("file:", StringComparison.OrdinalIgnoreCase)))
         {
-            MimeType = img.MimeType
+            return new FilePart { File = new FileContent(uri) { MimeType = img.MimeType } };
         }
-    };
+
+        return new FilePart { File = new FileContent(img.Url) { MimeType = img.MimeType } };
+    }
 
     public static FilePart ToA2AFilePart(this ChatAudio audio)
     {
