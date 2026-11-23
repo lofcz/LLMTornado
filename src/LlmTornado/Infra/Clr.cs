@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Code;
 using Newtonsoft.Json.Linq;
@@ -288,7 +289,7 @@ internal static class Clr
         return finalCollection;
     }
     
-    public static async ValueTask<MethodInvocationResult> Invoke(Delegate? function, DelegateMetadata? metadata, string? data)
+    public static async ValueTask<MethodInvocationResult> Invoke(Delegate? function, DelegateMetadata? metadata, string? data, CancellationToken cancellationToken = default)
     {
         if (function is null || metadata?.Tool?.Params is null)
         {
@@ -345,6 +346,12 @@ internal static class Clr
             if (delegateParam.ParameterType == typeof(ToolArguments))
             {
                 args.Add(new ToolArguments { Data = normalizedData });
+                continue;
+            }
+
+            if (delegateParam.ParameterType == typeof(CancellationToken))
+            {
+                args.Add(cancellationToken);
                 continue;
             }
 

@@ -266,14 +266,14 @@ public class FunctionCall
     /// <summary>
     /// Resolves the call by asynchronously invoking the attached delegate with given JSON data.
     /// </summary>
-    public async ValueTask<MethodInvocationResult> Invoke(string data)
+    public async ValueTask<MethodInvocationResult> Invoke(string data, CancellationToken cancellationToken = default)
     {
         if (Tool is null)
         {
             return new MethodInvocationResult(new Exception("Tool is null, nothing to invoke"));
         }
 
-        MethodInvocationResult invocationResult = await Clr.Invoke(Tool.Delegate, Tool.DelegateMetadata, data).ConfigureAwait(false);
+        MethodInvocationResult invocationResult = await Clr.Invoke(Tool.Delegate, Tool.DelegateMetadata, data, cancellationToken).ConfigureAwait(false);
 
         if (invocationResult.InvocationException is null)
         {

@@ -394,6 +394,42 @@ public class ToolRunnerTests
 
     #endregion
 
+    #region Cancellation
+
+    [Test]
+    public async Task CallFuncToolAsync_CancellationToken_ReachesDelegateParameter()
+    {
+        TornadoAgent agent = CreateTestAgent(GetTemperature);
+        Tool tool = new Tool(WaitUntilCancelled, new ToolMetadata { Ignore = ["cancellationToken"] });
+        tool.Serialize(new OpenAiEndpointProvider(LLmProviders.OpenAi));
+        agent.ToolList["WaitUntilCancelled"] = tool;
+        FunctionCall call = CreateFunctionCall("WaitUntilCancelled", "{}", agent);
+        using CancellationTokenSource cts = new CancellationTokenSource();
+        cts.CancelAfter(TimeSpan.FromMilliseconds(100));
+
+        Task<FunctionResult> running = ToolRunner.CallFuncToolAsync(agent, call, cts.Token);
+        FunctionResult result = await running.WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.That(result.Content, Does.Contain("cancelled"));
+    }
+
+    [Description("Waits until the token it receives is cancelled.")]
+    private static async Task<string> WaitUntilCancelled(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return "cancelled";
+        }
+
+        return "finished";
+    }
+
+    #endregion
+
     #region Test Helpers
 
     private static TornadoAgent CreateTestAgent(Delegate toolDelegate)
