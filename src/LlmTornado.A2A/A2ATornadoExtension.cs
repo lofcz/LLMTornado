@@ -76,8 +76,8 @@ public static partial class A2ATornadoExtension
 
         metadata ??= new Dictionary<string, JsonElement>();
         metadata["tokens"] = JsonDocument.Parse($"{chatMessage.Tokens ?? 0}").RootElement;
-        metadata["refusal"] = JsonDocument.Parse($"\"{chatMessage.Refusal ?? ""}\"").RootElement;
-        metadata["userName"] = JsonDocument.Parse($"\"{chatMessage.Name ?? ""}\"").RootElement;
+        metadata["refusal"] = JsonSerializer.SerializeToElement(chatMessage.Refusal ?? "");
+        metadata["userName"] = JsonSerializer.SerializeToElement(chatMessage.Name ?? "");
 
         return new AgentMessage
         {
@@ -136,8 +136,8 @@ public static partial class A2ATornadoExtension
 
         metadata ??= new Dictionary<string, JsonElement>();
         metadata["tokens"] = JsonDocument.Parse($"{chatMessage.Tokens ?? 0}").RootElement;
-        metadata["refusal"] = JsonDocument.Parse($"\"{chatMessage.Refusal ?? ""}\"").RootElement;
-        metadata["userName"] = JsonDocument.Parse($"\"{chatMessage.Name ?? ""}\"").RootElement;
+        metadata["refusal"] = JsonSerializer.SerializeToElement(chatMessage.Refusal ?? "");
+        metadata["userName"] = JsonSerializer.SerializeToElement(chatMessage.Name ?? "");
 
         return new Artifact
         {

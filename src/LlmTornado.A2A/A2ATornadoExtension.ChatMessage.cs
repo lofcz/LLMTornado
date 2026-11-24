@@ -79,7 +79,7 @@ public static partial class A2ATornadoExtension
         {
             Text = code.Code ?? "Code",
             Metadata = new Dictionary<string, JsonElement> {
-                { "Language", JsonDocument.Parse($"\"{(code.CustomLanguage != null ? code.CustomLanguage : code.Language)}\"").RootElement }
+                { "Language", JsonSerializer.SerializeToElement(code.CustomLanguage ?? code.Language.ToString()) }
             }
         };
     }
