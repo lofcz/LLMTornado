@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Infra;
 
@@ -57,9 +58,10 @@ public static class ToolRunner
     /// </summary>
     /// <param name="agent"></param>
     /// <param name="call"></param>
+    /// <param name="cancellationToken">Passed to a delegate parameter of type <see cref="CancellationToken"/>, if the tool declares one.</param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
-    public static async Task<FunctionResult> CallFuncToolAsync(TornadoAgent agent, FunctionCall call)
+    public static async Task<FunctionResult> CallFuncToolAsync(TornadoAgent agent, FunctionCall call, CancellationToken cancellationToken = default)
     {
         if (!agent.ToolList.TryGetValue(call.Name, out Tool? tool))
         {
@@ -69,7 +71,7 @@ public static class ToolRunner
         if (tool?.Delegate is not null)
         {
             string normalizedArgs = NormalizeArguments(call.Arguments);
-            MethodInvocationResult invocationResult = await call.Invoke(normalizedArgs).ConfigureAwait(false);
+            MethodInvocationResult invocationResult = await call.Invoke(normalizedArgs, cancellationToken).ConfigureAwait(false);
             FunctionResult result = call.Result ?? (invocationResult.InvocationSuccessful
                 ? new FunctionResult(call, new
                 {

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Pass the `CancellationToken` given to `TornadoAgent.Run` to local tool delegates that declare a `CancellationToken` parameter, so cancelling a turn also cancels a running tool.
 - Add Anthropic Messages thread sessions with full native history, streaming, bounded expiry/conflict recovery, refusal rollback, fallback handling, forks, and export/restore. Retain typed low-level create/continue requests and batch/token-count safeguards.
 - Support opt-in Anthropic API version `2026-10-21`, including sampling removal, message-content validation, and canonical rate-limit group metadata; preserve the legacy default.
 - Add Anthropic user-profile CRUD and enforcement data, request attribution for chat/token counting/batches, organization webhooks, and signature verification.

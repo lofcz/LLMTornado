@@ -437,7 +437,7 @@ public class TornadoRunner
     /// <param name="toolCall"></param>
     /// <param name="toolPermissionHandle">Request tool permission handle</param>
     /// <returns></returns>
-    private static async Task<FunctionResult> HandleToolCall(TornadoAgent agent, FunctionCall toolCall, TornadoRunnerOptions runnerOptions, Func<string, ValueTask<bool>>? toolPermissionHandle = null)
+    private static async Task<FunctionResult> HandleToolCall(TornadoAgent agent, FunctionCall toolCall, TornadoRunnerOptions runnerOptions, Func<string, ValueTask<bool>>? toolPermissionHandle = null, CancellationToken cancellationToken = default)
     {
         bool permissionGranted = true;
         FunctionResult functionResult = new FunctionResult(toolCall, "No Result", FunctionResultSetContentModes.Passthrough);
@@ -472,7 +472,7 @@ public class TornadoRunner
                 }
                 else
                 {
-                    functionResult = await ToolRunner.CallFuncToolAsync(agent, toolCall);
+                    functionResult = await ToolRunner.CallFuncToolAsync(agent, toolCall, cancellationToken);
                 }
             }
             catch (Exception e)
@@ -492,7 +492,7 @@ public class TornadoRunner
         return functionResult;
     }
 
-    private static async Task<Conversation> CheckForToolCallsAndHandle(Conversation chat, TornadoAgent agent, TornadoRunnerOptions runnerOptions, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, Func<string, ValueTask<bool>>? toolPermissionRequest = null)
+    private static async Task<Conversation> CheckForToolCallsAndHandle(Conversation chat, TornadoAgent agent, TornadoRunnerOptions runnerOptions, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, Func<string, ValueTask<bool>>? toolPermissionRequest = null, CancellationToken cancellationToken = default)
     {
         List<ToolCall>? calls = chat.Messages.Count is 0 ? null : chat.Messages[^1].ToolCalls;
 
@@ -512,7 +512,7 @@ public class TornadoRunner
                     await runnerCallback.Invoke(new AgentRunnerToolInvokedEvent(fn, chat));    
                 }
 
-                fn.Result = await HandleToolCall(agent, fn, runnerOptions, toolPermissionRequest); //[consideration]I could go parallel here but not sure if its worth the complexity
+                fn.Result = await HandleToolCall(agent, fn, runnerOptions, toolPermissionRequest, cancellationToken); //[consideration]I could go parallel here but not sure if its worth the complexity
 
                 if (runnerCallback is not null)
                 {
@@ -563,7 +563,7 @@ public class TornadoRunner
 
             RefreshToolsForNextTurn(agent, chat);
 
-            chat = await CheckForToolCallsAndHandle(chat, agent, runnerOptions, runnerCallback, toolPermissionRequest);
+            chat = await CheckForToolCallsAndHandle(chat, agent, runnerOptions, runnerCallback, toolPermissionRequest, cancellationToken);
         try{
             if (Streaming && runnerCallback != null)
             {
@@ -584,7 +584,7 @@ public class TornadoRunner
                         }
                         
                         // guard against double execution
-                        fn.Result ??= await HandleToolCall(agent, fn, runnerOptions, toolPermissionRequest);
+                        fn.Result ??= await HandleToolCall(agent, fn, runnerOptions, toolPermissionRequest, cancellationToken);
 
                         if (runnerCallback is not null)
                         {
@@ -706,7 +706,7 @@ public class TornadoRunner
                     if (runnerCallback is not null)
                     {
                         await runnerCallback.Invoke(new AgentRunnerToolInvokedEvent(fn, chat));
-                        fn.Result ??= await HandleToolCall(agent, fn, runnerOptions, toolPermissionRequest); //I could go parallel here but not sure if its worth the complexity
+                        fn.Result ??= await HandleToolCall(agent, fn, runnerOptions, toolPermissionRequest, cancellationToken); //I could go parallel here but not sure if its worth the complexity
                         await runnerCallback.Invoke(new AgentRunnerToolCompletedEvent(fn, chat));   
                     }
                 }
