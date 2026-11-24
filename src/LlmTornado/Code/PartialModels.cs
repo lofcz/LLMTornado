@@ -1501,6 +1501,11 @@ public class ToolMetadata
     public List<ToolParamDefinition>? Params { get; set; }
     public List<string>? Ignore { get; set; }
 
+    /// <summary>
+    /// When true, properties with a <c>null</c> value are kept in the JSON result of the tool delegate sent to the model. Default is false, nulls are omitted.
+    /// </summary>
+    public bool KeepNullsInResult { get; set; }
+
     public ToolMetadata()
     {
         

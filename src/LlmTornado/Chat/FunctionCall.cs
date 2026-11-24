@@ -283,7 +283,7 @@ public class FunctionCall
             }
             else
             {
-                Result = new FunctionResult(this, invocationResult.Result as string ?? invocationResult.Result.ToJson(), FunctionResultSetContentModes.Passthrough);    
+                Result = new FunctionResult(this, invocationResult.Result as string ?? (Tool.Metadata?.KeepNullsInResult is true && invocationResult.Result is not null ? JsonConvert.SerializeObject(invocationResult.Result, Formatting.None) : invocationResult.Result.ToJson()), FunctionResultSetContentModes.Passthrough);
             }
         }
 
