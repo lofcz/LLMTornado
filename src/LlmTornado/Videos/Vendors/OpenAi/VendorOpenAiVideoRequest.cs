@@ -86,7 +86,11 @@ internal static class VendorOpenAiVideoRequest
         }
         else if (request.Image is not null && !string.IsNullOrEmpty(request.Image.Url))
         {
-            string url = request.Image.Url;
+            // Raw base64 is wrapped as a data URI (image/jpeg when no MIME type is set, as in the multipart path).
+            VideoImage image = string.IsNullOrWhiteSpace(request.Image.MimeType)
+                ? new VideoImage(request.Image.Url, "image/jpeg")
+                : request.Image;
+            string url = image.AsProviderImageUrl();
             if (url.StartsWith("data:", StringComparison.OrdinalIgnoreCase) || url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
             {
                 body["input_reference"] = new VideoInputReference { ImageUrl = url };
