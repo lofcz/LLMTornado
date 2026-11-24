@@ -344,6 +344,37 @@ public class ToolRunnerTests
         Assert.That(result.Content, Does.Not.Contain("target of an invocation"));
     }
 
+    [Description("Returns a record with a null column")]
+    public static object GetRecordWithNull()
+    {
+        return new { id = "1", deleted_at = (string?)null };
+    }
+
+    [Test]
+    public async Task Invoke_ObjectResultWithNullProperty_OmitsTheNullByDefault()
+    {
+        TornadoAgent agent = CreateTestAgent(GetRecordWithNull);
+        FunctionCall call = CreateFunctionCall("GetRecordWithNull", null, agent);
+
+        await call.Invoke("{}");
+
+        Assert.That(call.Result, Is.Not.Null);
+        Assert.That(call.Result!.Content, Is.EqualTo("{\"id\":\"1\"}"));
+    }
+
+    [Test]
+    public async Task Invoke_ObjectResultWithNullProperty_KeepsTheNullWhenOptedIn()
+    {
+        Tool tool = new Tool(GetRecordWithNull, new ToolMetadata { KeepNullsInResult = true });
+        tool.Serialize(new OpenAiEndpointProvider(LLmProviders.OpenAi));
+        FunctionCall call = new FunctionCall { Name = "GetRecordWithNull", Tool = tool };
+
+        await call.Invoke("{}");
+
+        Assert.That(call.Result, Is.Not.Null);
+        Assert.That(call.Result!.Content, Is.EqualTo("{\"id\":\"1\",\"deleted_at\":null}"));
+    }
+
     [Test]
     public async Task Invoke_ToolThrows_ReturnsTheToolExceptionNotTheReflectionWrapper()
     {
